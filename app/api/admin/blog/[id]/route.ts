@@ -17,7 +17,7 @@ export async function PATCH(
   if ("error" in parsed) {
     return parsed.error;
   }
-  const data: { title?: string; body?: string | null; published?: boolean } = {};
+  const data: { title?: string; body?: string; published?: boolean } = {};
   if (parsed.data.title !== undefined) {
     const title = asString(parsed.data.title);
     if (!title) {

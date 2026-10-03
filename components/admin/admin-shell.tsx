@@ -96,6 +96,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           );
         }
 
+        if (!("href" in item)) {
+          return null;
+        }
+
         const active = isActive(pathname, item.href);
         return (
           <Link

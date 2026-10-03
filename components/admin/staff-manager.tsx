@@ -20,6 +20,8 @@ export function StaffManager({ initial }: { initial: StaffUser[] }) {
   const [role, setRole] = useState<"OWNER" | "STAFF">("STAFF");
   const [resetFor, setResetFor] = useState<string | null>(null);
   const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState("");
 
   async function refresh() {
     const payload = (await adminFetch("/api/admin/staff")) as { users: StaffUser[] };
