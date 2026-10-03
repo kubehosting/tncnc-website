@@ -62,9 +62,14 @@ export const settingDefaults = {
 export type SiteSettings = typeof settingDefaults;
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-  const rows = await prisma.siteSetting.findMany();
-  const map = Object.fromEntries(rows.map((row) => [row.key, row.value]));
-  return { ...settingDefaults, ...map };
+  try {
+    const rows = await prisma.siteSetting.findMany();
+    const map = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+    return { ...settingDefaults, ...map };
+  } catch (error) {
+    console.error("Could not load site settings from the database.", error);
+    return { ...settingDefaults };
+  }
 }
 
 export async function saveSiteSettings(patch: Record<string, string>) {

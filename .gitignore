@@ -39,6 +39,8 @@ yarn-error.log*
 *.db-journal
 /prisma/*.db
 /prisma/*.db-journal
+/data/*.db
+/data/*.db-journal
 
 # uploaded inventory photos
 /public/uploads/inventory/*

@@ -22,17 +22,22 @@ export async function getCustomerFromRequest(request: Request) {
 }
 
 export async function getCustomerFromCookies() {
-  const jar = await cookies();
-  const parsed = await parseCustomerSession(
-    jar.get(CUSTOMER_SESSION_COOKIE)?.value,
-    getSessionSecret(),
-  );
-  if (!parsed) {
+  try {
+    const jar = await cookies();
+    const parsed = await parseCustomerSession(
+      jar.get(CUSTOMER_SESSION_COOKIE)?.value,
+      getSessionSecret(),
+    );
+    if (!parsed) {
+      return null;
+    }
+    return prisma.customer.findFirst({
+      where: { id: parsed.customerId, passwordHash: { not: null } },
+    });
+  } catch (error) {
+    console.error("Could not read customer session.", error);
     return null;
   }
-  return prisma.customer.findFirst({
-    where: { id: parsed.customerId, passwordHash: { not: null } },
-  });
 }
 
 export async function requireCustomer(request: Request) {

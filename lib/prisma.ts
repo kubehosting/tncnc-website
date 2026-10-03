@@ -1,4 +1,13 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+
+const dataDir = path.join(process.cwd(), "data");
+mkdirSync(dataDir, { recursive: true });
+
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "file:../data/prod.db";
+}
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 

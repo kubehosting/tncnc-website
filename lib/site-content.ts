@@ -48,46 +48,69 @@ export function toListingMachine(machine: {
 }
 
 export async function getHomeContent() {
-  const [dbCategories, dbFeatured] = await Promise.all([
-    prisma.category.findMany({
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    }),
-    prisma.machine.findMany({
-      where: { featured: true, used: true, status: "AVAILABLE" },
-      orderBy: { updatedAt: "desc" },
-      take: 4,
-      include: listingInclude,
-    }),
-  ]);
+  try {
+    const [dbCategories, dbFeatured] = await Promise.all([
+      prisma.category.findMany({
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      }),
+      prisma.machine.findMany({
+        where: { featured: true, used: true, status: "AVAILABLE" },
+        orderBy: { updatedAt: "desc" },
+        take: 4,
+        include: listingInclude,
+      }),
+    ]);
 
-  const machineCategories: HomeCategory[] = (
-    dbCategories.length
-      ? dbCategories.filter((category) => category.kind === "MACHINE" && category.imageUrl)
-      : categorySeed.filter((category) => category.kind === "MACHINE")
-  ).map((category) => ({
-    slug: category.slug,
-    name: category.name,
-    imageUrl: category.imageUrl,
-    href: categoryHref(category.slug, category.kind),
-  }));
+    const machineCategories: HomeCategory[] = (
+      dbCategories.length
+        ? dbCategories.filter((category) => category.kind === "MACHINE" && category.imageUrl)
+        : categorySeed.filter((category) => category.kind === "MACHINE")
+    ).map((category) => ({
+      slug: category.slug,
+      name: category.name,
+      imageUrl: category.imageUrl,
+      href: categoryHref(category.slug, category.kind),
+    }));
 
-  const spareCategories: HomeCategory[] = (
-    dbCategories.length
-      ? dbCategories.filter((category) => category.kind === "SPARE" && category.imageUrl)
-      : categorySeed.filter((category) => category.kind === "SPARE")
-  ).map((category) => ({
-    slug: category.slug,
-    name: category.name,
-    imageUrl: category.imageUrl,
-    href: categoryHref(category.slug, category.kind),
-  }));
+    const spareCategories: HomeCategory[] = (
+      dbCategories.length
+        ? dbCategories.filter((category) => category.kind === "SPARE" && category.imageUrl)
+        : categorySeed.filter((category) => category.kind === "SPARE")
+    ).map((category) => ({
+      slug: category.slug,
+      name: category.name,
+      imageUrl: category.imageUrl,
+      href: categoryHref(category.slug, category.kind),
+    }));
 
-  const featured =
-    dbFeatured.length > 0
-      ? dbFeatured.map(toListingMachine)
-      : catalogMachines.filter((machine) => machine.featured).slice(0, 4);
+    const featured =
+      dbFeatured.length > 0
+        ? dbFeatured.map(toListingMachine)
+        : catalogMachines.filter((machine) => machine.featured).slice(0, 4);
 
-  return { machineCategories, spareCategories, featured };
+    return { machineCategories, spareCategories, featured };
+  } catch (error) {
+    console.error("Could not load homepage catalog from the database.", error);
+    return {
+      machineCategories: categorySeed
+        .filter((category) => category.kind === "MACHINE")
+        .map((category) => ({
+          slug: category.slug,
+          name: category.name,
+          imageUrl: category.imageUrl,
+          href: categoryHref(category.slug, category.kind),
+        })),
+      spareCategories: categorySeed
+        .filter((category) => category.kind === "SPARE")
+        .map((category) => ({
+          slug: category.slug,
+          name: category.name,
+          imageUrl: category.imageUrl,
+          href: categoryHref(category.slug, category.kind),
+        })),
+      featured: catalogMachines.filter((machine) => machine.featured).slice(0, 4),
+    };
+  }
 }
 
 export async function listPublicMachines(options?: {
