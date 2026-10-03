@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { categorySeed } from "../lib/category-seed";
 import { machines } from "../lib/catalog";
+import { hashPassword } from "../lib/password";
 
 const prisma = new PrismaClient();
 
@@ -145,6 +146,20 @@ async function main() {
       published: true,
     },
   });
+
+  if ((await prisma.adminUser.count()) === 0) {
+    const email = (process.env.ADMIN_OWNER_EMAIL || "kubendranath@tncnc.in").trim().toLowerCase();
+    const password = process.env.ADMIN_OWNER_PASSWORD || "tncnc-owner-8chars";
+    await prisma.adminUser.create({
+      data: {
+        name: "Kubendranath",
+        email,
+        passwordHash: await hashPassword(password),
+        role: "OWNER",
+        active: true,
+      },
+    });
+  }
 }
 
 main()
