@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum CategoryKind {
+  MACHINE
+  SPARE
+}
+
+enum MachineStatus {
+  AVAILABLE
+  SOLD
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PAID
+  PENDING
+  OVERDUE
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String?
+  imageUrl    String?
+  kind        CategoryKind @default(MACHINE)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  machines    Machine[]
+}
+
+model Machine {
+  id           String         @id @default(cuid())
+  slug         String         @unique
+  name         String
+  year         Int?
+  controller   String?
+  condition    String?
+  location     String?
+  brand        String?
+  stock        Int            @default(1)
+  price        Decimal?
+  status       MachineStatus  @default(AVAILABLE)
+  type         String?
+  description  String?
+  featured     Boolean        @default(false)
+  used         Boolean        @default(true)
+  categoryId   String
+  category     Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images       MachineImage[]
+  invoiceItems InvoiceItem[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model MachineImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+  machineId String
+  machine   Machine @relation(fields: [machineId], references: [id], onDelete: Cascade)
+}
+
+enum AdminRole {
+  OWNER
+  STAFF
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(STAFF)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Customer {
+  id           String    @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  company      String?
+  address      String?
+  notes        String?
+  passwordHash String?
+  lastLoginAt  DateTime?
+  invoices     Invoice[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  issuedAt      DateTime      @default(now())
+  dueAt         DateTime?
+  subtotal      Decimal       @default(0)
+  taxRate       Decimal       @default(18)
+  taxAmount     Decimal       @default(0)
+  totalAmount   Decimal       @default(0)
+  status        InvoiceStatus @default(DRAFT)
+  stockDeducted Boolean       @default(false)
+  notes         String?
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items         InvoiceItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Decimal
+  lineTotal   Decimal
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  machineId   String?
+  machine     Machine? @relation(fields: [machineId], references: [id], onDelete: SetNull)
+}
+
+model EnquiryMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  body      String
+  source    String   @default("website")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  body        String
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Coupon {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  percent   Int
+  active    Boolean  @default(true)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceRegion {
+  id        String   @id @default(cuid())
+  name      String
+  country   String   @default("India")
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+}
+
+model SiteSetting {
+  key   String @id
+  value String
+}
