@@ -1,4 +1,5 @@
 import { amount } from "@/lib/dashboard";
+import { ensureDatabase } from "@/lib/ensure-db";
 import { prisma } from "@/lib/prisma";
 
 function daysAgo(days: number) {
@@ -7,7 +8,33 @@ function daysAgo(days: number) {
   return date;
 }
 
+const emptyOverview = {
+  pendingOrders: 0,
+  processingOrders: 0,
+  completedOrders: 0,
+  productCount: 0,
+  customerCount: 0,
+  postCount: 0,
+  newCustomers: 0,
+  sales30: 0,
+  salesAll: 0,
+  monthRevenue: 0,
+  recentOrders: [] as Awaited<ReturnType<typeof loadOverview>>["recentOrders"],
+  recentCustomers: [] as Awaited<ReturnType<typeof loadOverview>>["recentCustomers"],
+  popularProducts: [] as Awaited<ReturnType<typeof loadOverview>>["popularProducts"],
+};
+
 export async function getAdminOverview() {
+  try {
+    await ensureDatabase();
+    return await loadOverview();
+  } catch (error) {
+    console.error("Admin overview query failed.", error);
+    return emptyOverview;
+  }
+}
+
+async function loadOverview() {
   const since30 = daysAgo(30);
 
   const [

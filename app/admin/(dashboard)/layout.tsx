@@ -10,7 +10,13 @@ export default async function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
-  if (!(await isAdminSessionToken(token, getAdminSecret()))) {
+  let signedIn = false;
+  try {
+    signedIn = await isAdminSessionToken(token, getAdminSecret());
+  } catch (error) {
+    console.error("Admin session check failed.", error);
+  }
+  if (!signedIn) {
     redirect("/admin/login");
   }
 

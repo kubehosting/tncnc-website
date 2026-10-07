@@ -5,7 +5,8 @@ import { PrismaClient } from "@prisma/client";
 const dataDir = path.join(process.cwd(), "data");
 mkdirSync(dataDir, { recursive: true });
 
-if (!process.env.DATABASE_URL) {
+const url = process.env.DATABASE_URL ?? "";
+if (!url.startsWith("file:")) {
   process.env.DATABASE_URL = "file:../data/prod.db";
 }
 
@@ -17,6 +18,4 @@ export const prisma =
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;

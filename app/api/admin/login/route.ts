@@ -7,7 +7,7 @@ import {
   sessionCookieOptions,
 } from "@/lib/admin-session";
 import { asString, jsonError, readJson } from "@/lib/admin-api";
-import { ensureDefaultAdmin } from "@/lib/ensure-admin";
+import { ensureDatabase } from "@/lib/ensure-db";
 import { normalizeEmail, verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 
@@ -45,23 +45,31 @@ export async function POST(request: Request) {
   }
 
   try {
-    await ensureDefaultAdmin();
+    await ensureDatabase();
   } catch (error) {
-    console.error("Could not create the default admin user.", error);
+    console.error("Could not prepare the admin database.", error);
   }
 
   if (email) {
-    const user = await prisma.adminUser.findUnique({
-      where: { email: normalizeEmail(email) },
-    });
-    if (user?.active && (await verifyPassword(password, user.passwordHash))) {
-      const response = NextResponse.json({ ok: true, name: user.name });
-      response.cookies.set(
-        ADMIN_SESSION_COOKIE,
-        await createAdminUserSessionToken(secret, user.id),
-        sessionCookieOptions(),
+    try {
+      const user = await prisma.adminUser.findUnique({
+        where: { email: normalizeEmail(email) },
+      });
+      if (user?.active && (await verifyPassword(password, user.passwordHash))) {
+        const response = NextResponse.json({ ok: true, name: user.name });
+        response.cookies.set(
+          ADMIN_SESSION_COOKIE,
+          await createAdminUserSessionToken(secret, user.id),
+          sessionCookieOptions(),
+        );
+        return response;
+      }
+    } catch (error) {
+      console.error("Admin email login failed.", error);
+      return NextResponse.json(
+        { error: "Admin database is not ready. Try the desk API key, then reload." },
+        { status: 503 },
       );
-      return response;
     }
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
   }
