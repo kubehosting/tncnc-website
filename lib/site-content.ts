@@ -118,40 +118,54 @@ export async function listPublicMachines(options?: {
   type?: string;
   kind?: CategoryKind;
 }) {
-  const machines = await prisma.machine.findMany({
-    where: {
-      status: "AVAILABLE",
-      used: options?.used,
-      category: options?.type
-        ? { slug: options.type }
-        : options?.kind
-          ? { kind: options.kind }
-          : undefined,
-    },
-    orderBy: { featured: "desc" },
-    include: listingInclude,
-  });
-  return machines.map(toListingMachine);
+  try {
+    const machines = await prisma.machine.findMany({
+      where: {
+        status: "AVAILABLE",
+        used: options?.used,
+        category: options?.type
+          ? { slug: options.type }
+          : options?.kind
+            ? { kind: options.kind }
+            : undefined,
+      },
+      orderBy: { featured: "desc" },
+      include: listingInclude,
+    });
+    return machines.map(toListingMachine);
+  } catch (error) {
+    console.error("Could not list machines from the database.", error);
+    return [];
+  }
 }
 
 export async function getPublicMachine(slug: string) {
-  const machine = await prisma.machine.findUnique({
-    where: { slug },
-    include: {
-      category: { select: { name: true } },
-      images: { orderBy: { sortOrder: "asc" } },
-    },
-  });
-  return machine ? toListingMachine(machine) : null;
+  try {
+    const machine = await prisma.machine.findUnique({
+      where: { slug },
+      include: {
+        category: { select: { name: true } },
+        images: { orderBy: { sortOrder: "asc" } },
+      },
+    });
+    return machine ? toListingMachine(machine) : null;
+  } catch (error) {
+    console.error("Could not load machine from the database.", error);
+    return null;
+  }
 }
 
 export async function listPublicCategories(kind?: CategoryKind) {
-  const categories = await prisma.category.findMany({
-    where: kind ? { kind } : undefined,
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-  });
-  if (categories.length) {
-    return categories;
+  try {
+    const categories = await prisma.category.findMany({
+      where: kind ? { kind } : undefined,
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    });
+    if (categories.length) {
+      return categories;
+    }
+  } catch (error) {
+    console.error("Could not list categories from the database.", error);
   }
   return categorySeed.filter((category) => (kind ? category.kind === kind : true));
 }
