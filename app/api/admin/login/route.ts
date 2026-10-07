@@ -7,6 +7,7 @@ import {
   sessionCookieOptions,
 } from "@/lib/admin-session";
 import { asString, jsonError, readJson } from "@/lib/admin-api";
+import { ensureDefaultAdmin } from "@/lib/ensure-admin";
 import { normalizeEmail, verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 
@@ -41,6 +42,12 @@ export async function POST(request: Request) {
   const password = typeof parsed.data.password === "string" ? parsed.data.password : "";
   if (!password) {
     return jsonError("Password is required");
+  }
+
+  try {
+    await ensureDefaultAdmin();
+  } catch (error) {
+    console.error("Could not create the default admin user.", error);
   }
 
   if (email) {

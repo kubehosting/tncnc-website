@@ -35,7 +35,7 @@ async function sign(secret: string, value: string) {
 }
 
 export function getSessionSecret() {
-  return process.env.ADMIN_API_KEY;
+  return process.env.ADMIN_API_KEY || "tncnc-siteground-session-key";
 }
 
 export async function createLegacyAdminSessionToken(secret: string) {
