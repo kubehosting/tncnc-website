@@ -148,8 +148,11 @@ async function main() {
   });
 
   if ((await prisma.adminUser.count()) === 0) {
-    const email = (process.env.ADMIN_OWNER_EMAIL || "kubendranath@tncnc.in").trim().toLowerCase();
-    const password = process.env.ADMIN_OWNER_PASSWORD || "tncnc-owner-8chars";
+    const email = process.env.ADMIN_OWNER_EMAIL?.trim().toLowerCase() ?? "";
+    const password = process.env.ADMIN_OWNER_PASSWORD ?? "";
+    if (!email || password.length < 8) {
+      return;
+    }
     await prisma.adminUser.create({
       data: {
         name: "Kubendranath",

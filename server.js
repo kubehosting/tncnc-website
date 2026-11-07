@@ -14,9 +14,6 @@ mkdirSync(path.join(__dirname, "data"), { recursive: true });
 if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = "file:../data/prod.db";
 }
-if (!process.env.ADMIN_API_KEY) {
-  process.env.ADMIN_API_KEY = "tncnc-siteground-session-key";
-}
 process.env.NODE_ENV = process.env.NODE_ENV || "production";
 
 const app = next({

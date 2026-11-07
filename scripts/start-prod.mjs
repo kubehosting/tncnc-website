@@ -9,10 +9,6 @@ if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = "file:../data/prod.db";
 }
 
-if (!process.env.ADMIN_API_KEY) {
-  process.env.ADMIN_API_KEY = "tncnc-siteground-session-key";
-}
-
 const push = spawnSync("npx", ["prisma", "db", "push", "--skip-generate"], {
   stdio: "inherit",
   env: process.env,

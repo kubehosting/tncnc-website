@@ -5,8 +5,11 @@ export async function ensureDefaultAdmin() {
   if ((await prisma.adminUser.count()) > 0) {
     return;
   }
-  const email = (process.env.ADMIN_OWNER_EMAIL || "kubendranath@tncnc.in").trim().toLowerCase();
-  const password = process.env.ADMIN_OWNER_PASSWORD || "tncnc-owner-8chars";
+  const email = process.env.ADMIN_OWNER_EMAIL?.trim().toLowerCase() ?? "";
+  const password = process.env.ADMIN_OWNER_PASSWORD ?? "";
+  if (!email || password.length < 8) {
+    return;
+  }
   await prisma.adminUser.create({
     data: {
       name: "Kubendranath",
