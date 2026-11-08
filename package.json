@@ -24,17 +24,17 @@
     "prisma": "^6.16.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "tsx": "^4.20.5"
-  },
-  "devDependencies": {
+    "tsx": "^4.20.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/nodemailer": "^7.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^7.0.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6"
   }
 }

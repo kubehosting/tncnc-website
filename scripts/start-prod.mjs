@@ -34,6 +34,11 @@ function runNode(script, args) {
   return result.status ?? 1;
 }
 
+const generateStatus = runNode("node_modules/prisma/build/index.js", ["generate"]);
+if (generateStatus) {
+  process.exit(generateStatus);
+}
+
 const pushStatus = runNode("node_modules/prisma/build/index.js", [
   "db",
   "push",
@@ -46,6 +51,14 @@ if (pushStatus) {
 const seedStatus = runNode("node_modules/prisma/build/index.js", ["db", "seed"]);
 if (seedStatus) {
   console.error("Database seed failed; the public site can still start.");
+}
+
+if (!existsSync(path.join(root, ".next", "BUILD_ID"))) {
+  console.log("No production build found. Compiling TNCNC before start...");
+  const buildStatus = runNode("node_modules/next/dist/bin/next", ["build", "--webpack"]);
+  if (buildStatus) {
+    process.exit(buildStatus);
+  }
 }
 
 process.exit(runNode("node_modules/next/dist/bin/next", ["start"]));
