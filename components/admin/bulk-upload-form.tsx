@@ -38,8 +38,8 @@ export function BulkUploadForm({ categories }: { categories: { name: string; slu
     <div className="space-y-5">
       <div className="rounded-xl bg-white p-5 shadow-sm">
         <p className="text-sm text-slate-600">
-          Upload a CSV or Excel (.xls) file. Matching slugs are updated; new slugs are created.
-          You can export inventory first, edit the sheet, then import it back.
+          Upload a CSV or Excel file. The shop product download (.xlsx with sku, category_name,
+          and photo) is accepted, and missing categories are created. Matching SKUs are updated.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <a
@@ -59,10 +59,10 @@ export function BulkUploadForm({ categories }: { categories: { name: string; slu
           <span className="font-semibold text-navy">
             {pending ? "Importing…" : "Choose CSV or Excel file"}
           </span>
-          <span className="mt-1 text-xs text-slate-500">.csv or .xls · same columns as the export sheet</span>
+          <span className="mt-1 text-xs text-slate-500">.xlsx, .xls, or .csv</span>
           <input
             type="file"
-            accept=".csv,.xls,.xml,text/csv,application/vnd.ms-excel"
+            accept=".csv,.xls,.xlsx,.xml,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             className="hidden"
             disabled={pending}
             onChange={(event) => {
@@ -90,7 +90,9 @@ export function BulkUploadForm({ categories }: { categories: { name: string; slu
       <div className="rounded-xl bg-white p-5 text-sm shadow-sm">
         <p className="font-semibold text-navy">Required columns</p>
         <p className="mt-1 text-slate-600">
-          <code>name</code> and <code>categorySlug</code> (or Category name from an Excel export).
+          <code>name</code> and a category. A shop export can use <code>sku</code>,{" "}
+          <code>category_name</code>, <code>details</code>, <code>photo</code>, <code>price</code>, and{" "}
+          <code>stock</code>.
         </p>
         <p className="mt-4 font-semibold text-navy">Category slugs</p>
         <div className="mt-2 flex flex-wrap gap-2">

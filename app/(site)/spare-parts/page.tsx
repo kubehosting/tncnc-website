@@ -3,8 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { PageHero } from "@/components/page-hero";
+import { MachineCard } from "@/components/machine-card";
 import { spareParts as catalogSpares } from "@/lib/catalog";
-import { listPublicCategories } from "@/lib/site-content";
+import { listPublicCategories, listPublicMachines } from "@/lib/site-content";
 
 export const metadata: Metadata = {
   title: "Spare Parts",
@@ -33,6 +34,7 @@ export default async function SparePartsPage({
           name: part.name,
           imageUrl: null as string | null,
         }));
+  const products = typeof type === "string" ? await listPublicMachines({ type }) : [];
 
   return (
     <>
@@ -41,6 +43,14 @@ export default async function SparePartsPage({
         subtitle="Genuine and compatible FANUC, Siemens, Mitsubishi, Yaskawa parts with ready stock."
       />
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 lg:grid-cols-[1fr_360px] lg:px-6">
+        <div className="space-y-8">
+        {products.length > 0 ? (
+          <div className="grid gap-5 sm:grid-cols-2">
+            {products.map((machine) => (
+              <MachineCard key={machine.slug} machine={machine} />
+            ))}
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {display.map((part) => (
             <Link
@@ -65,6 +75,7 @@ export default async function SparePartsPage({
               </p>
             </Link>
           ))}
+        </div>
         </div>
         <div className="h-fit rounded-lg bg-white p-6 shadow-sm">
           <EnquiryForm heading="Enquire for a part" />

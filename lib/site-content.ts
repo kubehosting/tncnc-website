@@ -63,7 +63,7 @@ export async function getHomeContent() {
 
     const machineCategories: HomeCategory[] = (
       dbCategories.length
-        ? dbCategories.filter((category) => category.kind === "MACHINE" && category.imageUrl)
+        ? dbCategories.filter((category) => category.kind === "MACHINE")
         : categorySeed.filter((category) => category.kind === "MACHINE")
     ).map((category) => ({
       slug: category.slug,
@@ -74,7 +74,7 @@ export async function getHomeContent() {
 
     const spareCategories: HomeCategory[] = (
       dbCategories.length
-        ? dbCategories.filter((category) => category.kind === "SPARE" && category.imageUrl)
+        ? dbCategories.filter((category) => category.kind === "SPARE")
         : categorySeed.filter((category) => category.kind === "SPARE")
     ).map((category) => ({
       slug: category.slug,

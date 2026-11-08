@@ -1,3 +1,5 @@
+import { readXlsxRows } from "@/lib/xlsx-table";
+
 export const inventoryImportHeaders = [
   "name",
   "slug",
@@ -41,6 +43,17 @@ const aliases: Record<string, string> = {
   description: "description",
   imageurls: "imageUrls",
   "photo urls": "imageUrls",
+  photo: "imageUrls",
+  image: "imageUrls",
+  details: "description",
+  detail: "description",
+  category_name: "category",
+  "category name": "category",
+  subcategory_name: "subcategory",
+  "subcategory name": "subcategory",
+  childcategory_name: "childCategory",
+  "child category": "childCategory",
+  product_type: "productType",
 };
 
 function unescapeXml(value: string) {
@@ -112,6 +125,80 @@ function parseSpreadsheetMl(text: string) {
   });
 }
 
+const machineCategories = new Set([
+  "cnc machinery",
+  "conventional machinery",
+  "grinding machinery",
+  "fabrication machinery",
+  "material handling equipment's",
+  "material handling equipments",
+  "4th axis rotary table",
+]);
+
+function cleanPrice(value: string) {
+  const amount = Number(value.replace(/,/g, ""));
+  if (!Number.isFinite(amount) || amount < 2) {
+    return "";
+  }
+  return String(Math.round(amount * 100) / 100);
+}
+
+function cleanStock(value: string) {
+  if (!value.trim()) {
+    return "1";
+  }
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 0) {
+    return "1";
+  }
+  return String(Math.round(amount));
+}
+
+function productPhoto(value: string) {
+  const photo = value.trim();
+  if (!photo || photo === "noimage.png" || photo.endsWith(".php")) {
+    return "";
+  }
+  if (photo.startsWith("http://") || photo.startsWith("https://") || photo.startsWith("/")) {
+    return photo;
+  }
+  return `/products/${photo}`;
+}
+
+function applyDetailFields(row: Record<string, string>) {
+  const description = row.description ?? "";
+  if (!description) {
+    return;
+  }
+  const labels: Record<string, keyof typeof row> = {
+    manufacturer: "brand",
+    controller: "controller",
+    "year of mfg": "year",
+    "year of manufacture": "year",
+    location: "location",
+    condition: "condition",
+  };
+  for (const line of description.split(/\r?\n/)) {
+    const match = /^([^:]{2,40}):\s*(.+)$/.exec(line.trim());
+    if (!match) {
+      continue;
+    }
+    const field = labels[match[1].trim().toLowerCase()];
+    const value = match[2].trim();
+    if (!field || !value || row[field]) {
+      continue;
+    }
+    if (field === "year") {
+      const year = /(\d{4})/.exec(value)?.[1];
+      if (year) {
+        row.year = year;
+      }
+      continue;
+    }
+    row[field] = value;
+  }
+}
+
 export function parseInventoryFile(text: string, filename = "") {
   const lower = filename.toLowerCase();
   const looksXml =
@@ -120,6 +207,14 @@ export function parseInventoryFile(text: string, filename = "") {
     text.includes("urn:schemas-microsoft-com:office:spreadsheet");
   const raw = looksXml ? parseSpreadsheetMl(text) : parseCsv(text);
   return raw.map(normalizeImportRow).filter((row) => Boolean(row.name));
+}
+
+export function parseInventoryUpload(data: Buffer, filename = "") {
+  const lower = filename.toLowerCase();
+  if (lower.endsWith(".xlsx") || (data.length > 2 && data[0] === 0x50 && data[1] === 0x4b)) {
+    return readXlsxRows(data).map(normalizeImportRow).filter((row) => Boolean(row.name));
+  }
+  return parseInventoryFile(data.toString("utf8"), filename);
 }
 
 export function normalizeImportRow(input: Record<string, unknown>) {
@@ -131,6 +226,23 @@ export function normalizeImportRow(input: Record<string, unknown>) {
     }
     row[mapped] = String(value).trim();
   }
+  if (!row.type) {
+    row.type = [row.subcategory, row.childCategory].filter(Boolean).join(" · ");
+  }
+  const categoryName = row.category?.trim().toLowerCase() ?? "";
+  row.categoryKind = machineCategories.has(categoryName) ? "MACHINE" : "SPARE";
+  if (row.price) {
+    row.price = cleanPrice(row.price);
+  }
+  row.stock = cleanStock(row.stock ?? "");
+  if (row.imageUrls) {
+    row.imageUrls = productPhoto(row.imageUrls);
+  }
+  const usedText = `${row.name ?? ""} ${row.condition ?? ""} ${row.description ?? ""}`;
+  if (!row.used) {
+    row.used = /used/i.test(usedText) || row.categoryKind === "MACHINE" ? "Yes" : "No";
+  }
+  applyDetailFields(row);
   return row;
 }
 

@@ -1,6 +1,6 @@
 import { asInt, jsonError, jsonOk, readJson, slugify } from "@/lib/admin-api";
 import { requireAdmin } from "@/lib/admin-auth";
-import { parseInventoryFile, normalizeImportRow } from "@/lib/inventory-import";
+import { parseInventoryUpload, normalizeImportRow } from "@/lib/inventory-import";
 import { machineCreateInput, machineUpdateInput, replaceImages } from "@/lib/machines-admin";
 import { prisma } from "@/lib/prisma";
 
@@ -24,21 +24,41 @@ function truthy(value: unknown, fallback = false) {
   return fallback;
 }
 
-async function resolveCategory(row: Record<string, string>) {
-  const slug = row.categorySlug?.trim();
+async function categoryCatalog() {
+  const categories = await prisma.category.findMany();
+  return {
+    bySlug: new Map(categories.map((category) => [category.slug, category])),
+    byName: new Map(categories.map((category) => [category.name.toLowerCase(), category])),
+  };
+}
+
+async function resolveCategory(
+  row: Record<string, string>,
+  catalog: Awaited<ReturnType<typeof categoryCatalog>>,
+) {
   const name = row.category?.trim();
-  if (slug) {
-    const bySlug = await prisma.category.findUnique({ where: { slug } });
-    if (bySlug) {
-      return bySlug;
-    }
+  const slug = row.categorySlug?.trim() || (name ? slugify(name) : "");
+  const existing =
+    (slug ? catalog.bySlug.get(slug) : undefined) ||
+    (name ? catalog.byName.get(name.toLowerCase()) : undefined);
+  if (existing) {
+    return existing;
   }
-  if (name) {
-    return prisma.category.findFirst({
-      where: { OR: [{ name }, { slug: name.toLowerCase().replaceAll(" ", "-") }] },
-    });
+  if (!name || !slug) {
+    return null;
   }
-  return null;
+  const created = await prisma.category.create({
+    data: {
+      name,
+      slug,
+      kind: row.categoryKind === "MACHINE" ? "MACHINE" : "SPARE",
+      sortOrder: 200,
+      description: name,
+    },
+  });
+  catalog.bySlug.set(created.slug, created);
+  catalog.byName.set(created.name.toLowerCase(), created);
+  return created;
 }
 
 export async function POST(request: Request) {
@@ -55,7 +75,7 @@ export async function POST(request: Request) {
     if (!(file instanceof File) || file.size === 0) {
       return jsonError("Choose a CSV or Excel file");
     }
-    rows = parseInventoryFile(await file.text(), file.name);
+    rows = parseInventoryUpload(Buffer.from(await file.arrayBuffer()), file.name);
   } else {
     const parsed = await readJson(request);
     if ("error" in parsed) {
@@ -77,8 +97,10 @@ export async function POST(request: Request) {
   const updated: string[] = [];
   const errors: string[] = [];
 
+  const catalog = await categoryCatalog();
+
   for (const [index, row] of rows.entries()) {
-    const category = await resolveCategory(row);
+    const category = await resolveCategory(row, catalog);
     if (!category) {
       errors.push(`Row ${index + 1}: unknown category (use categorySlug like vmc or cnc-lathe)`);
       continue;
