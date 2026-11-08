@@ -90,7 +90,9 @@ export async function POST(request: Request) {
   }
 
   if (rows.length === 0) {
-    return jsonError("No product rows found in the file");
+    return jsonError(
+      "No product rows found. Upload the .xlsx product download, with columns name, sku, and category_name.",
+    );
   }
 
   const created: string[] = [];

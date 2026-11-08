@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
@@ -53,8 +53,27 @@ if (seedStatus) {
   console.error("Database seed failed; the public site can still start.");
 }
 
-if (!existsSync(path.join(root, ".next", "BUILD_ID"))) {
-  console.log("No production build found. Compiling TNCNC before start...");
+function sourceIsNewer(dir, builtAt) {
+  for (const name of readdirSync(dir)) {
+    if (name === "node_modules" || name === ".next" || name === "data" || name === ".git") {
+      continue;
+    }
+    const full = path.join(dir, name);
+    const info = statSync(full);
+    if (info.mtimeMs > builtAt) {
+      return true;
+    }
+    if (info.isDirectory() && sourceIsNewer(full, builtAt)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const buildIdPath = path.join(root, ".next", "BUILD_ID");
+const needsBuild = !existsSync(buildIdPath) || sourceIsNewer(root, statSync(buildIdPath).mtimeMs);
+if (needsBuild) {
+  console.log("Compiling TNCNC before start...");
   const buildStatus = runNode("node_modules/next/dist/bin/next", ["build", "--webpack"]);
   if (buildStatus) {
     process.exit(buildStatus);
