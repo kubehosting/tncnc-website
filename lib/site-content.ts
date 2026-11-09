@@ -66,12 +66,12 @@ export async function getHomeContent() {
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       }),
       prisma.machine.findMany({
-        where: { featured: true, used: true, status: "AVAILABLE" },
+        where: { featured: true, used: true, status: "AVAILABLE", deletedAt: null },
         orderBy: { updatedAt: "desc" },
         take: 4,
         include: listingInclude,
       }),
-      prisma.machine.count({ where: { status: "AVAILABLE" } }),
+      prisma.machine.count({ where: { status: "AVAILABLE", deletedAt: null } }),
     ]);
 
     const machineCategories: HomeCategory[] = (
@@ -136,6 +136,7 @@ export async function listPublicMachines(options?: {
     const machines = await prisma.machine.findMany({
       where: {
         status: "AVAILABLE",
+        deletedAt: null,
         used: options?.used,
         category: options?.type
           ? { slug: options.type }
@@ -226,7 +227,7 @@ export async function searchPublicMachines(query: string, limit = 24) {
 
   try {
     const machines = await prisma.machine.findMany({
-      where: { status: "AVAILABLE" },
+      where: { status: "AVAILABLE", deletedAt: null },
       orderBy: [{ featured: "desc" }, { name: "asc" }],
       include: listingInclude,
     });
@@ -331,7 +332,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetail | nu
         images: { orderBy: { sortOrder: "asc" } },
       },
     });
-    if (!machine) {
+    if (!machine || machine.deletedAt) {
       return null;
     }
     const specs = descriptionSpecs(machine.description ?? "");
@@ -412,6 +413,7 @@ export async function listRelatedMachines(currentSlug: string, categorySlug: str
     const primary = await prisma.machine.findMany({
       where: {
         status: "AVAILABLE",
+        deletedAt: null,
         slug: { not: currentSlug },
         ...(categorySlug ? { category: { slug: categorySlug } } : {}),
       },
@@ -425,6 +427,7 @@ export async function listRelatedMachines(currentSlug: string, categorySlug: str
         : await prisma.machine.findMany({
             where: {
               status: "AVAILABLE",
+              deletedAt: null,
               slug: { not: currentSlug },
             },
             orderBy: [{ featured: "desc" }, { updatedAt: "desc" }],
@@ -457,7 +460,7 @@ export async function getPublicMachine(slug: string) {
         images: { orderBy: { sortOrder: "asc" } },
       },
     });
-    return machine ? toListingMachine(machine) : null;
+    return machine && !machine.deletedAt ? toListingMachine(machine) : null;
   } catch (error) {
     console.error("Could not load machine from the database.", error);
     return null;

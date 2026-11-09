@@ -146,7 +146,10 @@ export async function POST(request: Request) {
           errors.push(`Row ${index + 1}: could not update ${name}`);
           continue;
         }
-        await prisma.machine.update({ where: { id: existing.id }, data: prepared.data });
+        await prisma.machine.update({
+          where: { id: existing.id },
+          data: { ...prepared.data, deletedAt: null },
+        });
         if (imageUrls.length) {
           await replaceImages(existing.id, imageUrls, name ?? existing.name);
         }

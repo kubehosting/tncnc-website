@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const categoryId = searchParams.get("categoryId") ?? undefined;
   const q = searchParams.get("q")?.trim();
 
-  const where: Prisma.MachineWhereInput = {};
+  const where: Prisma.MachineWhereInput = { deletedAt: null };
   if (status) {
     where.status = status;
   }

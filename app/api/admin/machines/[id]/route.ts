@@ -82,8 +82,20 @@ export async function DELETE(
   }
 
   const { id } = await params;
+  const forever = new URL(request.url).searchParams.get("forever") === "1";
   try {
-    await prisma.machine.delete({ where: { id } });
+    const machine = await prisma.machine.findUnique({ where: { id }, select: { id: true, deletedAt: true } });
+    if (!machine) {
+      return jsonError("Machine not found", 404);
+    }
+    if (forever) {
+      if (!machine.deletedAt) {
+        return jsonError("Move the product to the recycle bin before deleting it forever");
+      }
+      await prisma.machine.delete({ where: { id } });
+      return jsonOk({ ok: true });
+    }
+    await prisma.machine.update({ where: { id }, data: { deletedAt: new Date() } });
     return jsonOk({ ok: true });
   } catch (error) {
     return prismaError(error);

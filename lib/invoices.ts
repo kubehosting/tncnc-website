@@ -80,7 +80,7 @@ export async function resolveInvoiceItems(raw: unknown) {
 
     if (machineId) {
       const machine = await prisma.machine.findUnique({ where: { id: machineId } });
-      if (!machine) {
+      if (!machine || machine.deletedAt) {
         return { error: jsonError(`Inventory item not found: ${machineId}`, 404) };
       }
       description = description || machine.name;

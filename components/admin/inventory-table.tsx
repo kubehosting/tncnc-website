@@ -70,7 +70,7 @@ export function InventoryBoard({ rows, categories }: { rows: Row[]; categories: 
   const totalStock = rows.reduce((sum, row) => sum + row.stock, 0);
 
   async function onDelete(row: Row) {
-    if (!window.confirm(`Delete “${row.name}” from inventory?`)) {
+    if (!window.confirm(`Move “${row.name}” to the recycle bin? You can restore it later.`)) {
       return;
     }
     setError("");

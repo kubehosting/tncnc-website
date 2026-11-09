@@ -61,6 +61,7 @@ model Machine {
   category     Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   images       MachineImage[]
   invoiceItems InvoiceItem[]
+  deletedAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 }

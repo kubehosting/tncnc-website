@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   if (machineId) {
     const machine = await prisma.machine.findUnique({ where: { id: machineId } });
-    if (!machine) {
+    if (!machine || machine.deletedAt) {
       return jsonError("Machine not found", 404);
     }
     description = description || machine.name;

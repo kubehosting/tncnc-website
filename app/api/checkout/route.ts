@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
     for (const [slug, request] of requested) {
       const machine = bySlug.get(slug);
-      if (!machine || machine.status !== "AVAILABLE") {
+      if (!machine || machine.deletedAt || machine.status !== "AVAILABLE") {
         return jsonError(`${machine?.name ?? slug} is no longer available`);
       }
       if (request.quantity > machine.stock) {

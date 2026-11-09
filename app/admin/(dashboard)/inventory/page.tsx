@@ -8,8 +8,9 @@ export const metadata: Metadata = { title: "Inventory Management" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminInventoryPage() {
-  const [machines, categories] = await Promise.all([
+  const [machines, categories, recycled] = await Promise.all([
     prisma.machine.findMany({
+      where: { deletedAt: null },
       orderBy: [{ name: "asc" }],
       select: {
         id: true,
@@ -29,6 +30,7 @@ export default async function AdminInventoryPage() {
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true },
     }),
+    prisma.machine.count({ where: { deletedAt: { not: null } } }),
   ]);
 
   return (
@@ -44,6 +46,12 @@ export default async function AdminInventoryPage() {
             >
               Export to Excel
             </a>
+            <Link
+              href="/admin/inventory/recycle"
+              className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-navy hover:border-gold"
+            >
+              Recycle bin ({recycled})
+            </Link>
             <Link
               href="/admin/inventory/bulk"
               className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-navy hover:border-gold"

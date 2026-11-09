@@ -31,6 +31,7 @@ export const sqliteSchemaStatements = [
     "featured" BOOLEAN NOT NULL DEFAULT false,
     "used" BOOLEAN NOT NULL DEFAULT true,
     "categoryId" TEXT NOT NULL,
+    "deletedAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Machine_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category" ("id") ON DELETE RESTRICT ON UPDATE CASCADE

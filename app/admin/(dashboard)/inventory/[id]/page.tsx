@@ -41,7 +41,11 @@ export default async function EditInventoryPage({
     <>
       <AdminPageHeader
         title={`Edit ${machine.name}`}
-        description="Update technical specs, category, stock, and photos."
+        description={
+          machine.deletedAt
+            ? "This product is in the recycle bin. Restore it before it appears on the website."
+            : "Update technical specs, category, stock, and photos."
+        }
       />
       <InventoryForm
         categories={categories}

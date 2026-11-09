@@ -120,6 +120,10 @@ export async function DELETE(
 
   const { id } = await params;
   try {
+    const remaining = await prisma.machine.count({ where: { categoryId: id } });
+    if (remaining > 0) {
+      return jsonError("Move or restore products in this category, including any in the recycle bin, before deleting it.");
+    }
     await prisma.category.delete({ where: { id } });
     return jsonOk({ ok: true });
   } catch (error) {

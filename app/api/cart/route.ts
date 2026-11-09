@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const taxRate = Number(settings.gstRate);
     const machines = slugs.length
       ? await prisma.machine.findMany({
-          where: { slug: { in: slugs } },
+          where: { slug: { in: slugs }, deletedAt: null },
           include: { images: { orderBy: { sortOrder: "asc" }, take: 1 } },
         })
       : [];

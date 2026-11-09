@@ -51,6 +51,7 @@ const headers = [
 
 export async function buildInventoryExcel() {
   const machines = await prisma.machine.findMany({
+    where: { deletedAt: null },
     orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
     include: {
       category: { select: { name: true, kind: true } },

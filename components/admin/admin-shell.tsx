@@ -11,7 +11,7 @@ function isActive(pathname: string, href: string) {
     return pathname === "/admin";
   }
   if (href === "/admin/inventory") {
-    return pathname === href || /^\/admin\/inventory\/(?!bulk)/.test(pathname);
+    return pathname === href || /^\/admin\/inventory\/(?!bulk|recycle)/.test(pathname);
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

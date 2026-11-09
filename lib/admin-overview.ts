@@ -54,7 +54,7 @@ async function loadOverview() {
     prisma.invoice.count({ where: { status: { in: ["PENDING", "OVERDUE"] } } }),
     prisma.invoice.count({ where: { status: "DRAFT" } }),
     prisma.invoice.count({ where: { status: "PAID" } }),
-    prisma.machine.count(),
+    prisma.machine.count({ where: { deletedAt: null } }),
     prisma.customer.count(),
     prisma.blogPost.count({ where: { published: true } }),
     prisma.customer.count({ where: { createdAt: { gte: since30 } } }),
@@ -73,7 +73,7 @@ async function loadOverview() {
       select: { id: true, email: true, name: true, createdAt: true },
     }),
     prisma.machine.findMany({
-      where: { featured: true },
+      where: { featured: true, deletedAt: null },
       take: 6,
       orderBy: { updatedAt: "desc" },
       include: {

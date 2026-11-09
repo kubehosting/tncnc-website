@@ -10,6 +10,7 @@ export default async function NewInvoicePage() {
   const [customers, inventory] = await Promise.all([
     prisma.customer.findMany({ orderBy: { name: "asc" } }),
     prisma.machine.findMany({
+      where: { deletedAt: null },
       orderBy: { name: "asc" },
       include: { category: { select: { name: true } } },
     }),

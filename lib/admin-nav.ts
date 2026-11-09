@@ -10,6 +10,7 @@ export const adminNav = [
     label: "Product",
     children: [
       { href: "/admin/inventory", label: "Inventory" },
+      { href: "/admin/inventory/recycle", label: "Recycle bin" },
       { href: "/admin/inventory/bulk", label: "Bulk Product Import" },
       { href: "/admin/coupons", label: "Set Coupons" },
     ],
