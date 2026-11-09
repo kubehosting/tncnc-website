@@ -32,6 +32,7 @@ model Category {
   imageUrl    String?
   kind        CategoryKind @default(MACHINE)
   sortOrder   Int          @default(0)
+  showOnHome  Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   machines    Machine[]

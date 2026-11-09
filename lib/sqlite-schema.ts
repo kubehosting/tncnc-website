@@ -7,6 +7,7 @@ export const sqliteSchemaStatements = [
     "imageUrl" TEXT,
     "kind" TEXT NOT NULL DEFAULT 'MACHINE',
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "showOnHome" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
   )`,

@@ -24,6 +24,7 @@ async function applySchema() {
   }
 
   await ensureMachineColumns();
+  await ensureCategoryColumns();
 
   try {
     await ensureDefaultAdmin();
@@ -47,5 +48,14 @@ async function ensureMachineColumns() {
       continue;
     }
     await prisma.$executeRawUnsafe(`ALTER TABLE "Machine" ADD COLUMN "${name}" ${type}`);
+  }
+}
+
+async function ensureCategoryColumns() {
+  const columns = await prisma.$queryRawUnsafe<Array<{ name: string }>>(`PRAGMA table_info("Category")`);
+  if (!columns.some((column) => column.name === "showOnHome")) {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Category" ADD COLUMN "showOnHome" BOOLEAN NOT NULL DEFAULT true`,
+    );
   }
 }

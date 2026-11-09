@@ -16,7 +16,7 @@ export default async function AdminCategoriesPage() {
     <>
       <AdminPageHeader
         title="Manage Categories"
-        description="Add photos for machine types and spare-part groups. These appear on the public homepage."
+        description="Add photos for machine types and spare-part groups, and choose which categories appear on the homepage."
       />
       <CategoryManager initial={categories} />
     </>

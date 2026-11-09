@@ -94,13 +94,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </section>
       ) : null}
 
-      <section className="bg-white">
-        <div className="mx-auto grid max-w-7xl grid-cols-3 gap-3 px-4 py-8 sm:grid-cols-5 lg:grid-cols-9 lg:px-6">
-          {machineCategories.map((category) => (
-            <CategoryTile key={category.slug} category={category} round />
-          ))}
-        </div>
-      </section>
+      {machineCategories.length ? (
+        <section className="bg-white">
+          <div className="mx-auto grid max-w-7xl grid-cols-3 gap-3 px-4 py-8 sm:grid-cols-5 lg:grid-cols-9 lg:px-6">
+            {machineCategories.map((category) => (
+              <CategoryTile key={category.slug} category={category} round />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="mx-auto max-w-7xl px-4 py-12 lg:px-6">
         <div className="mb-6 flex items-end justify-between gap-4">
@@ -166,11 +168,15 @@ export default async function Home({ searchParams }: PageProps<"/">) {
               View All Spare Parts →
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-4 sm:grid-cols-5 lg:grid-cols-9">
-            {spareCategories.map((category) => (
-              <CategoryTile key={category.slug} category={category} />
-            ))}
-          </div>
+          {spareCategories.length ? (
+            <div className="grid grid-cols-3 gap-4 sm:grid-cols-5 lg:grid-cols-9">
+              {spareCategories.map((category) => (
+                <CategoryTile key={category.slug} category={category} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">Browse every spare part from the link above.</p>
+          )}
         </div>
       </section>
 

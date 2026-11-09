@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin-auth";
 import {
+  asBool,
   asCategoryKind,
   asInt,
   asOptionalString,
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
         imageUrl: image === undefined ? null : image,
         kind,
         sortOrder,
+        showOnHome: asBool(parsed.data.showOnHome) ?? true,
       },
     });
     return jsonOk({ category }, 201);

@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin-auth";
 import {
+  asBool,
   asCategoryKind,
   asInt,
   asOptionalString,
@@ -59,6 +60,7 @@ export async function PATCH(
     imageUrl?: string | null;
     kind?: "MACHINE" | "SPARE";
     sortOrder?: number;
+    showOnHome?: boolean;
   } = {};
   if (parsed.data.name !== undefined) {
     const name = asString(parsed.data.name);
@@ -99,6 +101,13 @@ export async function PATCH(
       return jsonError("sortOrder must be a whole number");
     }
     data.sortOrder = sortOrder;
+  }
+  if (parsed.data.showOnHome !== undefined) {
+    const showOnHome = asBool(parsed.data.showOnHome);
+    if (showOnHome === undefined) {
+      return jsonError("showOnHome must be true or false");
+    }
+    data.showOnHome = showOnHome;
   }
 
   try {

@@ -13,6 +13,7 @@ type Category = {
   imageUrl: string | null;
   kind: "MACHINE" | "SPARE";
   sortOrder: number;
+  showOnHome: boolean;
   _count: { machines: number };
 };
 
@@ -27,6 +28,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
   const [kind, setKind] = useState<"MACHINE" | "SPARE">("MACHINE");
   const [sortOrder, setSortOrder] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
+  const [showOnHome, setShowOnHome] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -38,6 +40,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
     setKind(category.kind);
     setSortOrder(String(category.sortOrder));
     setImageUrl(category.imageUrl ?? "");
+    setShowOnHome(category.showOnHome);
     setError("");
   }
 
@@ -48,6 +51,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
     setKind("MACHINE");
     setSortOrder("0");
     setImageUrl("");
+    setShowOnHome(true);
     setError("");
   }
 
@@ -75,6 +79,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
       kind,
       sortOrder: Number(sortOrder) || 0,
       imageUrl: imageUrl.trim() || null,
+      showOnHome,
     };
     try {
       if (editingId) {
@@ -92,6 +97,25 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save category");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function toggleHome(category: Category) {
+    setPending(true);
+    setError("");
+    try {
+      await adminFetch(`/api/admin/categories/${category.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ showOnHome: !category.showOnHome }),
+      });
+      if (editingId === category.id) {
+        setShowOnHome(!category.showOnHome);
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update homepage visibility");
     } finally {
       setPending(false);
     }
@@ -159,6 +183,20 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
             value={sortOrder}
             onChange={(event) => setSortOrder(event.target.value)}
           />
+        </label>
+        <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 accent-gold"
+            checked={showOnHome}
+            onChange={(event) => setShowOnHome(event.target.checked)}
+          />
+          <span>
+            <span className="block font-medium text-slate-700">Show on homepage</span>
+            <span className="block text-xs text-slate-500">
+              Untick to hide this category from the homepage row. It stays in menus and filters.
+            </span>
+          </span>
         </label>
         <label className="block text-sm font-medium text-slate-700">
           Description
@@ -241,6 +279,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
             <tr>
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Homepage</th>
               <th className="px-4 py-3">Order</th>
               <th className="px-4 py-3">Items</th>
               <th className="px-4 py-3 text-right">Actions</th>
@@ -269,6 +308,22 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
                 </td>
                 <td className="px-4 py-3 text-slate-600">
                   {category.kind === "SPARE" ? "Spare" : "Machine"}
+                </td>
+                <td className="px-4 py-3">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => toggleHome(category)}
+                    aria-pressed={category.showOnHome}
+                    title={category.showOnHome ? "Click to hide from homepage" : "Click to show on homepage"}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition disabled:opacity-60 ${
+                      category.showOnHome
+                        ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100"
+                        : "bg-slate-100 text-slate-500 ring-1 ring-slate-200 hover:bg-slate-200"
+                    }`}
+                  >
+                    {category.showOnHome ? "Shown" : "Hidden"}
+                  </button>
                 </td>
                 <td className="px-4 py-3">{category.sortOrder}</td>
                 <td className="px-4 py-3">{category._count.machines}</td>

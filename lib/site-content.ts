@@ -1,5 +1,6 @@
 import type { CategoryKind } from "@prisma/client";
 import { categoryHref, categorySeed } from "@/lib/category-seed";
+import { ensureDatabase } from "@/lib/ensure-db";
 import type { Machine } from "@/lib/catalog";
 import { machines as catalogMachines } from "@/lib/catalog";
 import { mediaUrl } from "@/lib/media-url";
@@ -62,7 +63,10 @@ export function toListingMachine(machine: {
 
 export async function getHomeContent() {
   try {
-    const [dbCategories, dbFeatured, listedCount] = await Promise.all([
+    await ensureDatabase().catch((error) => {
+      console.error("Could not prepare the database for the homepage.", error);
+    });
+    const [allCategories, dbFeatured, listedCount] = await Promise.all([
       prisma.category.findMany({
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       }),
@@ -74,9 +78,10 @@ export async function getHomeContent() {
       }),
       prisma.machine.count({ where: { status: "AVAILABLE", deletedAt: null } }),
     ]);
+    const dbCategories = allCategories.filter((category) => category.showOnHome);
 
     const machineCategories: HomeCategory[] = (
-      dbCategories.length
+      allCategories.length
         ? dbCategories.filter((category) => category.kind === "MACHINE")
         : categorySeed.filter((category) => category.kind === "MACHINE")
     ).map((category) => ({
@@ -87,7 +92,7 @@ export async function getHomeContent() {
     }));
 
     const spareCategories: HomeCategory[] = (
-      dbCategories.length
+      allCategories.length
         ? dbCategories.filter((category) => category.kind === "SPARE")
         : categorySeed.filter((category) => category.kind === "SPARE")
     ).map((category) => ({
