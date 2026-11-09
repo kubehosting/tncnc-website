@@ -139,6 +139,101 @@ export async function listPublicMachines(options?: {
   }
 }
 
+export type ProductDetail = {
+  slug: string;
+  name: string;
+  category: string;
+  categorySlug: string;
+  type: string;
+  brand: string;
+  model: string;
+  controller: string;
+  year: string;
+  condition: string;
+  location: string;
+  stock: number;
+  price: number | null;
+  description: string;
+  images: string[];
+  weight: string;
+  capacity: string;
+  arrival: string;
+  featured: boolean;
+};
+
+function specValue(specs: Record<string, string>, keys: string[]) {
+  for (const key of keys) {
+    const value = specs[key];
+    if (value) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function descriptionSpecs(description: string) {
+  const specs: Record<string, string> = {};
+  for (const line of description.split(/\r?\n/)) {
+    const match = /^([^:\t]{2,48})[:\t]\s*(.+)$/.exec(line.trim());
+    if (!match) {
+      continue;
+    }
+    const key = match[1]
+      .trim()
+      .toLowerCase()
+      .replace(/\s*\([^)]*\)\s*/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    specs[key] = match[2].trim().replace(/^["']|["']$/g, "");
+  }
+  return specs;
+}
+
+export async function getProductDetail(slug: string): Promise<ProductDetail | null> {
+  try {
+    const machine = await prisma.machine.findUnique({
+      where: { slug },
+      include: {
+        category: { select: { name: true, slug: true } },
+        images: { orderBy: { sortOrder: "asc" } },
+      },
+    });
+    if (!machine) {
+      return null;
+    }
+    const specs = descriptionSpecs(machine.description ?? "");
+    const yearFromSpec = /(\d{4})/.exec(specValue(specs, ["year of mfg", "year of manufacture"]))?.[1];
+    return {
+      slug: machine.slug,
+      name: machine.name,
+      category: machine.category.name,
+      categorySlug: machine.category.slug,
+      type: machine.type ?? specValue(specs, ["category"]) ?? machine.category.name,
+      brand: machine.brand ?? specValue(specs, ["manufacturer"]) ?? "",
+      model: specValue(specs, ["model number", "model"]),
+      controller: machine.controller ?? specValue(specs, ["controller"]) ?? "",
+      year: machine.year != null ? String(machine.year) : (yearFromSpec ?? ""),
+      condition: machine.condition ?? specValue(specs, ["condition"]) ?? "",
+      location: machine.location ?? specValue(specs, ["location"]) ?? "",
+      stock: machine.stock,
+      price: machine.price != null ? Number(machine.price) : null,
+      description: machine.description ?? "",
+      images: machine.images.map((image) => image.url),
+      weight: specValue(specs, ["weight"]),
+      capacity: specValue(specs, ["working capacity", "capacity"]),
+      arrival: machine.createdAt.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      featured: machine.featured,
+    };
+  } catch (error) {
+    console.error("Could not load product details from the database.", error);
+    return null;
+  }
+}
+
 export async function getPublicMachine(slug: string) {
   try {
     const machine = await prisma.machine.findUnique({
