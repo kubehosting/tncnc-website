@@ -49,7 +49,7 @@ const trust = [
 ];
 
 export default async function Home() {
-  const [{ machineCategories, spareCategories, featured }, settings] = await Promise.all([
+  const [{ machineCategories, spareCategories, featured, productCount }, settings] = await Promise.all([
     getHomeContent(),
     getSiteSettings(),
   ]);
@@ -80,12 +80,14 @@ export default async function Home() {
               {settings.featuredSubheading}
             </p>
           </div>
-          <Link
-            href="/used-machines"
-            className="hidden text-sm font-semibold text-navy hover:underline sm:block"
-          >
-            View All Machines →
-          </Link>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <p className="rounded-full bg-navy px-3 py-1 text-xs font-bold text-white">
+              {new Intl.NumberFormat("en-IN").format(productCount)} products listed
+            </p>
+            <Link href="/used-machines" className="text-sm font-semibold text-navy hover:underline">
+              View All Machines →
+            </Link>
+          </div>
         </div>
         <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

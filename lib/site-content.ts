@@ -49,7 +49,7 @@ export function toListingMachine(machine: {
 
 export async function getHomeContent() {
   try {
-    const [dbCategories, dbFeatured] = await Promise.all([
+    const [dbCategories, dbFeatured, listedCount] = await Promise.all([
       prisma.category.findMany({
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       }),
@@ -59,6 +59,7 @@ export async function getHomeContent() {
         take: 4,
         include: listingInclude,
       }),
+      prisma.machine.count({ where: { status: "AVAILABLE" } }),
     ]);
 
     const machineCategories: HomeCategory[] = (
@@ -88,7 +89,7 @@ export async function getHomeContent() {
         ? dbFeatured.map(toListingMachine)
         : catalogMachines.filter((machine) => machine.featured).slice(0, 4);
 
-    return { machineCategories, spareCategories, featured };
+    return { machineCategories, spareCategories, featured, productCount: listedCount };
   } catch (error) {
     console.error("Could not load homepage catalog from the database.", error);
     return {
@@ -109,6 +110,7 @@ export async function getHomeContent() {
           href: categoryHref(category.slug, category.kind),
         })),
       featured: catalogMachines.filter((machine) => machine.featured).slice(0, 4),
+      productCount: catalogMachines.length,
     };
   }
 }
