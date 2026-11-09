@@ -165,6 +165,13 @@ function productPhoto(value: string) {
   return `/products/${photo}`;
 }
 
+export function productPhotoList(value: string) {
+  return value
+    .split(/[\r\n;|,]+/)
+    .map((part) => productPhoto(part))
+    .filter(Boolean);
+}
+
 function applyDetailFields(row: Record<string, string>) {
   const description = row.description ?? "";
   if (!description) {
@@ -236,7 +243,7 @@ export function normalizeImportRow(input: Record<string, unknown>) {
   }
   row.stock = cleanStock(row.stock ?? "");
   if (row.imageUrls) {
-    row.imageUrls = productPhoto(row.imageUrls);
+    row.imageUrls = productPhotoList(row.imageUrls).join("|");
   }
   const usedText = `${row.name ?? ""} ${row.condition ?? ""} ${row.description ?? ""}`;
   if (!row.used) {
