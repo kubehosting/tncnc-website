@@ -159,6 +159,7 @@ export type ProductDetail = {
   capacity: string;
   arrival: string;
   featured: boolean;
+  used: boolean;
 };
 
 function specValue(specs: Record<string, string>, keys: string[]) {
@@ -227,10 +228,87 @@ export async function getProductDetail(slug: string): Promise<ProductDetail | nu
         year: "numeric",
       }),
       featured: machine.featured,
+      used: machine.used,
     };
   } catch (error) {
     console.error("Could not load product details from the database.", error);
     return null;
+  }
+}
+
+export type RelatedMachine = {
+  slug: string;
+  name: string;
+  year: string;
+  location: string;
+  image: string;
+};
+
+export function specEntries(description: string) {
+  const rows: { label: string; value: string }[] = [];
+  for (const line of description.split(/\r?\n/)) {
+    const match = /^([^:\t]{2,60})[:\t]\s*(.+)$/.exec(line.trim());
+    if (!match) {
+      continue;
+    }
+    const value = match[2].trim().replace(/^["']|["']$/g, "");
+    if (!value) {
+      continue;
+    }
+    rows.push({ label: match[1].trim(), value });
+  }
+  return rows;
+}
+
+export function overviewCopy(description: string) {
+  return description
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !/^([^:\t]{2,60})[:\t]\s*.+$/.test(line))
+    .join("\n\n");
+}
+
+export async function listRelatedMachines(currentSlug: string, categorySlug: string) {
+  try {
+    const include = {
+      images: { orderBy: { sortOrder: "asc" as const }, take: 1 },
+    };
+    const primary = await prisma.machine.findMany({
+      where: {
+        status: "AVAILABLE",
+        slug: { not: currentSlug },
+        ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+      },
+      orderBy: [{ featured: "desc" }, { updatedAt: "desc" }],
+      take: 8,
+      include,
+    });
+    const extra =
+      primary.length > 0
+        ? []
+        : await prisma.machine.findMany({
+            where: {
+              status: "AVAILABLE",
+              slug: { not: currentSlug },
+            },
+            orderBy: [{ featured: "desc" }, { updatedAt: "desc" }],
+            take: 8,
+            include,
+          });
+    return [...primary, ...extra].map(
+      (machine): RelatedMachine => ({
+        slug: machine.slug,
+        name: machine.name,
+        year: machine.year != null ? String(machine.year) : "—",
+        location: machine.location ?? "India",
+        image:
+          machine.images[0]?.url ??
+          "https://images.unsplash.com/photo-1565043666747-69f6646db940?auto=format&fit=crop&w=900&q=80",
+      }),
+    );
+  } catch (error) {
+    console.error("Could not load related machines.", error);
+    return [];
   }
 }
 

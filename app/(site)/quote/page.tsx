@@ -6,7 +6,9 @@ export const metadata: Metadata = {
   title: "Get a Quote",
 };
 
-export default function QuotePage() {
+export default async function QuotePage({ searchParams }: PageProps<"/quote">) {
+  const { item } = await searchParams;
+  const machine = typeof item === "string" ? item : "";
   return (
     <>
       <PageHero
@@ -15,7 +17,11 @@ export default function QuotePage() {
       />
       <div className="mx-auto max-w-xl px-4 py-10 lg:px-6">
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          <EnquiryForm heading="Quote request" submitLabel="Request quote" />
+          <EnquiryForm
+            heading="Quote request"
+            submitLabel="Request quote"
+            defaultMessage={machine ? `I would like a quote for ${machine}.` : ""}
+          />
         </div>
       </div>
     </>

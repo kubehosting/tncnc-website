@@ -5,9 +5,11 @@ import { useState } from "react";
 export function EnquiryForm({
   heading,
   submitLabel = "Submit enquiry",
+  defaultMessage = "",
 }: {
   heading: string;
   submitLabel?: string;
+  defaultMessage?: string;
 }) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -72,6 +74,7 @@ export function EnquiryForm({
         name="message"
         rows={4}
         placeholder="Machine, spare part, or service you need"
+        defaultValue={defaultMessage}
         className="rounded border border-slate-300 bg-white px-3 py-2 text-sm"
       />
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}

@@ -21,7 +21,7 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
 
   return (
     <div>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 shadow-sm">
         <Image
           src={current}
           alt={name}
@@ -52,14 +52,14 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
         ) : null}
       </div>
       {photos.length > 1 ? (
-        <div className="mt-3 flex gap-2 overflow-x-auto">
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
           {photos.map((photo, photoIndex) => (
             <button
               key={`${photo}-${photoIndex}`}
               type="button"
               onClick={() => setIndex(photoIndex)}
-              className={`relative h-16 w-20 shrink-0 overflow-hidden rounded border ${
-                photoIndex === index ? "border-navy" : "border-slate-200"
+              className={`relative h-[72px] w-[104px] shrink-0 overflow-hidden rounded-md border-2 bg-slate-100 ${
+                photoIndex === index ? "border-navy" : "border-transparent"
               }`}
             >
               <Image src={photo} alt="" fill className="object-cover" sizes="80px" />
