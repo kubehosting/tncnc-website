@@ -50,8 +50,69 @@ const headers = [
   "Updated at",
 ];
 
-export async function buildInventoryExcel() {
-  await ensureDatabase();
+type ExportMachine = {
+  name: string;
+  slug: string;
+  categoryId: string;
+  subcategory: string | null;
+  childCategory: string | null;
+  sku: string | null;
+  brand: string | null;
+  type: string | null;
+  year: number | null;
+  controller: string | null;
+  condition: string | null;
+  location: string | null;
+  stock: number | null;
+  status: string | null;
+  price: unknown;
+  previousPrice: unknown;
+  used: boolean;
+  featured: boolean;
+  description: string | null;
+  updatedAt: Date | null;
+  images: { url: string }[];
+};
+
+type ExportCategory = { id: string; name: string; kind: string; sortOrder: number };
+
+type RawRow = Record<string, unknown>;
+
+function rawString(row: RawRow, key: string) {
+  const value = row[key];
+  return value === null || value === undefined ? null : String(value);
+}
+
+function rawNumber(row: RawRow, key: string) {
+  const value = row[key];
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function rawBoolean(row: RawRow, key: string) {
+  const value = row[key];
+  if (typeof value === "number" || typeof value === "bigint") {
+    return Number(value) === 1;
+  }
+  return value === true || value === "1" || value === "true";
+}
+
+function rawDate(row: RawRow, key: string) {
+  const value = row[key];
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const date =
+    typeof value === "number" || typeof value === "bigint"
+      ? new Date(Number(value))
+      : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function loadWithPrisma(): Promise<[ExportMachine[], ExportCategory[]]> {
   const [machines, categories] = await Promise.all([
     prisma.machine.findMany({
       where: { deletedAt: null },
@@ -62,6 +123,85 @@ export async function buildInventoryExcel() {
     }),
     prisma.category.findMany({ select: { id: true, name: true, kind: true, sortOrder: true } }),
   ]);
+  return [machines, categories];
+}
+
+// Reads whatever columns the live table has, so an older database still exports.
+async function loadWithRawSql(): Promise<[ExportMachine[], ExportCategory[]]> {
+  const [machineRows, categoryRows, imageRows] = await Promise.all([
+    prisma.$queryRawUnsafe<RawRow[]>(`SELECT * FROM "Machine"`),
+    prisma.$queryRawUnsafe<RawRow[]>(`SELECT * FROM "Category"`),
+    prisma.$queryRawUnsafe<RawRow[]>(`SELECT * FROM "MachineImage"`).catch(() => [] as RawRow[]),
+  ]);
+
+  const imagesByMachine = new Map<string, { url: string; sortOrder: number }[]>();
+  for (const row of imageRows) {
+    const machineId = rawString(row, "machineId");
+    const url = rawString(row, "url");
+    if (!machineId || !url) {
+      continue;
+    }
+    const list = imagesByMachine.get(machineId) ?? [];
+    list.push({ url, sortOrder: rawNumber(row, "sortOrder") ?? 0 });
+    imagesByMachine.set(machineId, list);
+  }
+
+  const machines = machineRows
+    .filter((row) => row.deletedAt === null || row.deletedAt === undefined)
+    .map((row): ExportMachine => {
+      const id = rawString(row, "id") ?? "";
+      return {
+        name: rawString(row, "name") ?? "",
+        slug: rawString(row, "slug") ?? "",
+        categoryId: rawString(row, "categoryId") ?? "",
+        subcategory: rawString(row, "subcategory"),
+        childCategory: rawString(row, "childCategory"),
+        sku: rawString(row, "sku"),
+        brand: rawString(row, "brand"),
+        type: rawString(row, "type"),
+        year: rawNumber(row, "year"),
+        controller: rawString(row, "controller"),
+        condition: rawString(row, "condition"),
+        location: rawString(row, "location"),
+        stock: rawNumber(row, "stock"),
+        status: rawString(row, "status"),
+        price: rawNumber(row, "price"),
+        previousPrice: rawNumber(row, "previousPrice"),
+        used: rawBoolean(row, "used"),
+        featured: rawBoolean(row, "featured"),
+        description: rawString(row, "description"),
+        updatedAt: rawDate(row, "updatedAt"),
+        images: (imagesByMachine.get(id) ?? [])
+          .sort((left, right) => left.sortOrder - right.sortOrder)
+          .map(({ url }) => ({ url })),
+      };
+    });
+
+  const categories = categoryRows.map((row) => ({
+    id: rawString(row, "id") ?? "",
+    name: rawString(row, "name") ?? "",
+    kind: rawString(row, "kind") ?? "MACHINE",
+    sortOrder: rawNumber(row, "sortOrder") ?? 0,
+  }));
+
+  return [machines, categories];
+}
+
+export async function buildInventoryExcel() {
+  try {
+    await ensureDatabase();
+  } catch (error) {
+    console.error("Could not prepare the database before export.", error);
+  }
+
+  let machines: ExportMachine[];
+  let categories: ExportCategory[];
+  try {
+    [machines, categories] = await loadWithPrisma();
+  } catch (error) {
+    console.error("Inventory export query failed; reading tables directly.", error);
+    [machines, categories] = await loadWithRawSql();
+  }
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const sorted = [...machines].sort((left, right) => {
     const leftCategory = categoryById.get(left.categoryId);

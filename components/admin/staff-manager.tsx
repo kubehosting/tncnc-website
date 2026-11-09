@@ -107,7 +107,7 @@ export function StaffManager({ initial }: { initial: StaffUser[] }) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={onCreate} className="max-w-xl space-y-3 rounded-xl bg-white p-5 shadow-sm">
+      <form method="post" onSubmit={onCreate} className="max-w-xl space-y-3 rounded-xl bg-white p-5 shadow-sm">
         <h2 className="font-semibold text-navy">Add admin user</h2>
         <input
           className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"

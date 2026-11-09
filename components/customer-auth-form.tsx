@@ -46,7 +46,7 @@ export function CustomerAuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form method="post" onSubmit={onSubmit} className="space-y-4">
       {mode === "signup" ? (
         <label className="block text-sm font-medium text-navy">
           Full name

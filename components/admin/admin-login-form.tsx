@@ -60,7 +60,7 @@ export function AdminLoginForm() {
 
   if (mode === "reset") {
     return (
-      <form onSubmit={onReset} className="space-y-4">
+      <form method="post" onSubmit={onReset} className="space-y-4">
         <p className="text-sm text-slate-600">
           Enter the admin email, a new password, and the desk key from <code>.env</code> (
           <code>ADMIN_API_KEY</code>).
@@ -120,7 +120,7 @@ export function AdminLoginForm() {
   }
 
   return (
-    <form onSubmit={onLogin} className="space-y-4">
+    <form method="post" onSubmit={onLogin} className="space-y-4">
       <label className="block">
         <span className="mb-1.5 block text-sm font-medium text-slate-700">Email</span>
         <input
