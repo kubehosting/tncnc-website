@@ -130,22 +130,38 @@ export function readCookie(request: Request, name: string) {
   return undefined;
 }
 
-export function sessionCookieOptions(maxAge = ADMIN_SESSION_MAX_AGE) {
+function isHttpsRequest(request?: Request) {
+  if (!request) {
+    return false;
+  }
+  const forwarded = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  return forwarded === "https" || new URL(request.url).protocol === "https:";
+}
+
+// Dev previews load the site inside a cross-site iframe, where browsers drop
+// SameSite=Lax cookies. Production keeps Lax for CSRF protection.
+function baseCookieOptions(request?: Request) {
+  if (process.env.NODE_ENV !== "production" && isHttpsRequest(request)) {
+    return {
+      httpOnly: true as const,
+      sameSite: "none" as const,
+      secure: true,
+      partitioned: true,
+      path: "/",
+    };
+  }
   return {
     httpOnly: true as const,
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge,
   };
 }
 
-export function clearCookieOptions() {
-  return {
-    httpOnly: true as const,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  };
+export function sessionCookieOptions(maxAge = ADMIN_SESSION_MAX_AGE, request?: Request) {
+  return { ...baseCookieOptions(request), maxAge };
+}
+
+export function clearCookieOptions(request?: Request) {
+  return { ...baseCookieOptions(request), maxAge: 0 };
 }

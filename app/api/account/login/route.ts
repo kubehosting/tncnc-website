@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   response.cookies.set(
     CUSTOMER_SESSION_COOKIE,
     await createCustomerSessionToken(secret, customer.id),
-    sessionCookieOptions(CUSTOMER_SESSION_MAX_AGE),
+    sessionCookieOptions(CUSTOMER_SESSION_MAX_AGE, request),
   );
   return response;
 }

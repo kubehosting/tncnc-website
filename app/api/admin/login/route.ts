@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         response.cookies.set(
           ADMIN_SESSION_COOKIE,
           await createAdminUserSessionToken(secret, user.id),
-          sessionCookieOptions(),
+          sessionCookieOptions(undefined, request),
         );
         return response;
       }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     response.cookies.set(
       ADMIN_SESSION_COOKIE,
       await createLegacyAdminSessionToken(secret),
-      sessionCookieOptions(),
+      sessionCookieOptions(undefined, request),
     );
     return response;
   }
