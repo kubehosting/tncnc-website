@@ -1,4 +1,5 @@
 import { jsonOk, prismaError } from "@/lib/admin-api";
+import { mediaUrl } from "@/lib/media-url";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
           name: machine.name,
           price: machine.price != null ? Number(machine.price) : null,
           stock: machine.stock,
-          image: machine.images[0]?.url ?? null,
+          image: machine.images[0]?.url ? mediaUrl(machine.images[0].url) : null,
           available: machine.status === "AVAILABLE" && machine.stock > 0,
         };
       }),

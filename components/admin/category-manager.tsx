@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 import { adminFetch } from "@/lib/admin-fetch";
+import { mediaUrl } from "@/lib/media-url";
 
 type Category = {
   id: string;
@@ -173,7 +174,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
           {imageUrl ? (
             <figure className="relative mb-2 overflow-hidden rounded-xl border border-slate-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageUrl} alt="" className="h-32 w-full object-cover" />
+              <img src={mediaUrl(imageUrl)} alt="" className="h-32 w-full object-cover" />
               <button
                 type="button"
                 className="absolute right-2 top-2 rounded bg-white/90 px-2 py-0.5 text-xs font-semibold text-rose-700"
@@ -193,7 +194,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
           <input
             ref={fileRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
             onChange={async (event) => {
               const file = event.target.files?.[0];
@@ -254,7 +255,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
                       {category.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={category.imageUrl}
+                          src={mediaUrl(category.imageUrl)}
                           alt=""
                           className="h-full w-full object-cover"
                         />

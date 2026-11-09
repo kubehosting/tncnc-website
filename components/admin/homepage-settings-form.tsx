@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { adminFetch } from "@/lib/admin-fetch";
+import { mediaUrl } from "@/lib/media-url";
 import {
   MIN_HERO_SLIDES,
   defaultHeroSlides,
@@ -191,7 +192,7 @@ export function HomepageSettingsForm({ initial }: { initial: SiteSettings }) {
           </div>
           {slide.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={slide.imageUrl} alt="" className="h-36 w-full rounded-xl object-cover" />
+            <img src={mediaUrl(slide.imageUrl)} alt="" className="h-36 w-full rounded-xl object-cover" />
           ) : null}
           <button
             type="button"
@@ -211,7 +212,7 @@ export function HomepageSettingsForm({ initial }: { initial: SiteSettings }) {
               fileRefs.current[index] = node;
             }}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
             onChange={async (event) => {
               const file = event.target.files?.[0];

@@ -45,6 +45,7 @@ yarn-error.log*
 # uploaded inventory photos
 /public/uploads/inventory/*
 !/public/uploads/inventory/.gitkeep
+/data/uploads/
 
 # vercel
 .vercel

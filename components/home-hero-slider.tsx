@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { isOptimizedImage, type HeroSlide } from "@/lib/hero-slides";
+import { mediaUrl } from "@/lib/media-url";
 import { whatsappLink } from "@/lib/catalog";
 
 export function HomeHeroSlider({
@@ -47,11 +48,11 @@ export function HomeHeroSlider({
           }`}
         >
           <Image
-            src={slide.imageUrl}
+            src={mediaUrl(slide.imageUrl)}
             alt=""
             fill
             priority={slideIndex === 0}
-            unoptimized={!isOptimizedImage(slide.imageUrl)}
+            unoptimized={!isOptimizedImage(mediaUrl(slide.imageUrl))}
             className="object-cover object-[70%_center] opacity-50"
             sizes="100vw"
           />

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { mediaUrl } from "@/lib/media-url";
 
 function isOptimizedImage(src: string) {
   return src.startsWith("/") || src.includes("images.unsplash.com");
@@ -24,12 +25,12 @@ export function BrandLogo({
       } ${className}`}
     >
       <Image
-        src={src}
+        src={mediaUrl(src)}
         alt={alt}
         width={220}
         height={56}
         priority={priority}
-        unoptimized={!isOptimizedImage(src)}
+        unoptimized={!isOptimizedImage(mediaUrl(src))}
         className="h-8 w-auto sm:h-9"
       />
     </span>

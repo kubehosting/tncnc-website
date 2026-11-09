@@ -2,9 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { HomeHeroSlider } from "@/components/home-hero-slider";
 import { MachineCard } from "@/components/machine-card";
+import { ProductSearch } from "@/components/product-search";
 import { parseHeroSlides } from "@/lib/hero-slides";
 import type { HomeCategory } from "@/lib/site-content";
-import { getHomeContent } from "@/lib/site-content";
+import { getHomeContent, searchPublicMachines } from "@/lib/site-content";
 import { getSiteSettings } from "@/lib/site-settings";
 import type { Machine } from "@/lib/catalog";
 
@@ -48,10 +49,13 @@ const trust = [
   },
 ];
 
-export default async function Home() {
-  const [{ machineCategories, spareCategories, featured, productCount }, settings] = await Promise.all([
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const { q } = await searchParams;
+  const query = typeof q === "string" ? q.trim() : "";
+  const [{ machineCategories, spareCategories, featured, productCount }, settings, results] = await Promise.all([
     getHomeContent(),
     getSiteSettings(),
+    query.length >= 2 ? searchPublicMachines(query) : Promise.resolve([]),
   ]);
 
   return (
@@ -61,6 +65,34 @@ export default async function Home() {
         badges={[settings.heroBadge1, settings.heroBadge2, settings.heroBadge3].filter(Boolean)}
         intervalMs={Math.max(3, Number(settings.heroSliderSeconds) || 6) * 1000}
       />
+
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-3xl px-4 py-6 lg:px-6">
+          <ProductSearch initialQuery={query} />
+        </div>
+      </section>
+
+      {query.length >= 2 ? (
+        <section id="search-results" className="mx-auto max-w-7xl px-4 py-10 lg:px-6">
+          <h2 className="text-2xl font-extrabold text-navy">Results for “{query}”</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            {results.length === 0
+              ? "Nothing in the current catalog matches that search."
+              : `${results.length} product${results.length === 1 ? "" : "s"} found`}
+          </p>
+          {results.length > 0 ? (
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {results.map((machine) => (
+                <MachineCard key={machine.slug} machine={machine} />
+              ))}
+            </div>
+          ) : (
+            <Link href="/machines" className="mt-4 inline-block text-sm font-semibold text-navy hover:underline">
+              Browse all machines →
+            </Link>
+          )}
+        </section>
+      ) : null}
 
       <section className="bg-white">
         <div className="mx-auto grid max-w-7xl grid-cols-3 gap-3 px-4 py-8 sm:grid-cols-5 lg:grid-cols-9 lg:px-6">

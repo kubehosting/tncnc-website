@@ -1,30 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-ui";
-import { InventoryTable } from "@/components/admin/inventory-table";
+import { InventoryBoard } from "@/components/admin/inventory-table";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = { title: "Inventory Management" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminInventoryPage() {
-  const machines = await prisma.machine.findMany({
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      brand: true,
-      stock: true,
-      status: true,
-      category: { select: { name: true } },
-    },
-  });
+  const [machines, categories] = await Promise.all([
+    prisma.machine.findMany({
+      orderBy: [{ name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        brand: true,
+        stock: true,
+        status: true,
+        category: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.category.findMany({
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true },
+    }),
+  ]);
 
   return (
     <>
       <AdminPageHeader
         title="Inventory Management"
-        description="Machines and spare parts with stock levels and listing status."
+        description="All products in boxes, grouped by category, with the total on each box."
         action={
           <div className="flex flex-wrap gap-2">
             <a
@@ -48,7 +54,7 @@ export default async function AdminInventoryPage() {
           </div>
         }
       />
-      <InventoryTable rows={machines} />
+      <InventoryBoard rows={machines} categories={categories} />
     </>
   );
 }

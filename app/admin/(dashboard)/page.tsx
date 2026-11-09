@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { formatDateTime, inr } from "@/lib/admin-ui";
+import { mediaUrl } from "@/lib/media-url";
 import { getAdminOverview } from "@/lib/admin-overview";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -234,7 +235,7 @@ export default async function AdminOverviewPage() {
                       <span className="relative block h-12 w-16 overflow-hidden rounded bg-slate-100">
                         {product.images[0]?.url ? (
                           <Image
-                            src={product.images[0].url}
+                            src={mediaUrl(product.images[0].url)}
                             alt=""
                             fill
                             className="object-cover"

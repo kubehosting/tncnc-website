@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { adminFetch } from "@/lib/admin-fetch";
+import { mediaUrl } from "@/lib/media-url";
 import { parseNav, stringifyNav, type NavItem } from "@/lib/site-nav";
 import type { SiteSettings } from "@/lib/site-settings";
 
@@ -165,7 +166,7 @@ export function HeaderFooterSettingsForm({ initial }: { initial: SiteSettings })
           <p className="mb-1.5 text-sm font-medium text-slate-700">Logo</p>
           {values.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={values.logoUrl} alt="" className="mb-3 h-12 w-auto rounded bg-navy p-2" />
+            <img src={mediaUrl(values.logoUrl)} alt="" className="mb-3 h-12 w-auto rounded bg-navy p-2" />
           ) : null}
           <button
             type="button"
@@ -183,7 +184,7 @@ export function HeaderFooterSettingsForm({ initial }: { initial: SiteSettings })
           <input
             ref={fileRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
             className="hidden"
             onChange={async (event) => {
               const file = event.target.files?.[0];

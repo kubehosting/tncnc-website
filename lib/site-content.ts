@@ -2,6 +2,7 @@ import type { CategoryKind } from "@prisma/client";
 import { categoryHref, categorySeed } from "@/lib/category-seed";
 import type { Machine } from "@/lib/catalog";
 import { machines as catalogMachines } from "@/lib/catalog";
+import { mediaUrl } from "@/lib/media-url";
 import { prisma } from "@/lib/prisma";
 
 export type HomeCategory = {
@@ -38,9 +39,9 @@ export function toListingMachine(machine: {
     control: machine.controller ?? "—",
     condition: machine.condition ?? "—",
     location: machine.location ?? "—",
-    image:
-      machine.images[0]?.url ??
-      "https://images.unsplash.com/photo-1565043666747-69f6646db940?auto=format&fit=crop&w=900&q=80",
+    image: machine.images[0]?.url
+      ? mediaUrl(machine.images[0].url)
+      : "https://images.unsplash.com/photo-1565043666747-69f6646db940?auto=format&fit=crop&w=900&q=80",
     featured: machine.featured,
     used: machine.used,
     description: machine.description ?? "",
@@ -69,7 +70,7 @@ export async function getHomeContent() {
     ).map((category) => ({
       slug: category.slug,
       name: category.name,
-      imageUrl: category.imageUrl,
+      imageUrl: category.imageUrl ? mediaUrl(category.imageUrl) : category.imageUrl,
       href: categoryHref(category.slug, category.kind),
     }));
 
@@ -80,7 +81,7 @@ export async function getHomeContent() {
     ).map((category) => ({
       slug: category.slug,
       name: category.name,
-      imageUrl: category.imageUrl,
+      imageUrl: category.imageUrl ? mediaUrl(category.imageUrl) : category.imageUrl,
       href: categoryHref(category.slug, category.kind),
     }));
 
@@ -98,7 +99,7 @@ export async function getHomeContent() {
         .map((category) => ({
           slug: category.slug,
           name: category.name,
-          imageUrl: category.imageUrl,
+          imageUrl: category.imageUrl ? mediaUrl(category.imageUrl) : category.imageUrl,
           href: categoryHref(category.slug, category.kind),
         })),
       spareCategories: categorySeed
@@ -106,7 +107,7 @@ export async function getHomeContent() {
         .map((category) => ({
           slug: category.slug,
           name: category.name,
-          imageUrl: category.imageUrl,
+          imageUrl: category.imageUrl ? mediaUrl(category.imageUrl) : category.imageUrl,
           href: categoryHref(category.slug, category.kind),
         })),
       featured: catalogMachines.filter((machine) => machine.featured).slice(0, 4),
@@ -138,6 +139,58 @@ export async function listPublicMachines(options?: {
   } catch (error) {
     console.error("Could not list machines from the database.", error);
     return [];
+  }
+}
+
+export async function searchPublicMachines(query: string, limit = 24) {
+  const needle = query.trim().toLowerCase();
+  if (needle.length < 2) {
+    return [];
+  }
+  const matches = (values: Array<string | number | null | undefined>) =>
+    values
+      .filter((value) => value != null && String(value).trim() !== "")
+      .join(" ")
+      .toLowerCase()
+      .includes(needle);
+
+  try {
+    const machines = await prisma.machine.findMany({
+      where: { status: "AVAILABLE" },
+      orderBy: [{ featured: "desc" }, { name: "asc" }],
+      include: listingInclude,
+    });
+    return machines
+      .filter((machine) =>
+        matches([
+          machine.name,
+          machine.brand,
+          machine.type,
+          machine.controller,
+          machine.location,
+          machine.condition,
+          machine.category.name,
+          machine.slug,
+          machine.year,
+        ]),
+      )
+      .slice(0, limit)
+      .map(toListingMachine);
+  } catch (error) {
+    console.error("Could not search the catalog.", error);
+    return catalogMachines
+      .filter((machine) =>
+        matches([
+          machine.name,
+          machine.type,
+          machine.control,
+          machine.location,
+          machine.condition,
+          machine.year,
+          machine.slug,
+        ]),
+      )
+      .slice(0, limit);
   }
 }
 
@@ -221,7 +274,7 @@ export async function getProductDetail(slug: string): Promise<ProductDetail | nu
       stock: machine.stock,
       price: machine.price != null ? Number(machine.price) : null,
       description: machine.description ?? "",
-      images: machine.images.map((image) => image.url),
+      images: machine.images.map((image) => mediaUrl(image.url)),
       weight: specValue(specs, ["weight"]),
       capacity: specValue(specs, ["working capacity", "capacity"]),
       arrival: machine.createdAt.toLocaleDateString("en-IN", {
@@ -303,9 +356,9 @@ export async function listRelatedMachines(currentSlug: string, categorySlug: str
         name: machine.name,
         year: machine.year != null ? String(machine.year) : "—",
         location: machine.location ?? "India",
-        image:
-          machine.images[0]?.url ??
-          "https://images.unsplash.com/photo-1565043666747-69f6646db940?auto=format&fit=crop&w=900&q=80",
+        image: machine.images[0]?.url
+          ? mediaUrl(machine.images[0].url)
+          : "https://images.unsplash.com/photo-1565043666747-69f6646db940?auto=format&fit=crop&w=900&q=80",
       }),
     );
   } catch (error) {
@@ -337,7 +390,10 @@ export async function listPublicCategories(kind?: CategoryKind) {
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
     if (categories.length) {
-      return categories;
+      return categories.map((category) => ({
+        ...category,
+        imageUrl: category.imageUrl ? mediaUrl(category.imageUrl) : category.imageUrl,
+      }));
     }
   } catch (error) {
     console.error("Could not list categories from the database.", error);
