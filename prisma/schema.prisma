@@ -47,10 +47,14 @@ model Machine {
   location     String?
   brand        String?
   stock        Int            @default(1)
-  price        Decimal?
-  status       MachineStatus  @default(AVAILABLE)
-  type         String?
-  description  String?
+  price         Decimal?
+  previousPrice Decimal?
+  sku           String?
+  subcategory   String?
+  childCategory String?
+  status        MachineStatus  @default(AVAILABLE)
+  type          String?
+  description   String?
   featured     Boolean        @default(false)
   used         Boolean        @default(true)
   categoryId   String

@@ -23,7 +23,7 @@ const aliases: Record<string, string> = {
   name: "name",
   slug: "slug",
   "sku / slug": "slug",
-  sku: "slug",
+  sku: "sku",
   categoryslug: "categorySlug",
   category: "category",
   "category type": "categoryType",
@@ -37,6 +37,9 @@ const aliases: Record<string, string> = {
   status: "status",
   price: "price",
   "price (inr)": "price",
+  previous_price: "previousPrice",
+  "previous price": "previousPrice",
+  "previous price (inr)": "previousPrice",
   used: "used",
   "used machine": "used",
   featured: "featured",
@@ -233,6 +236,9 @@ export function normalizeImportRow(input: Record<string, unknown>) {
     }
     row[mapped] = String(value).trim();
   }
+  if (!row.slug && row.sku) {
+    row.slug = row.sku;
+  }
   if (!row.type) {
     row.type = [row.subcategory, row.childCategory].filter(Boolean).join(" · ");
   }
@@ -240,6 +246,9 @@ export function normalizeImportRow(input: Record<string, unknown>) {
   row.categoryKind = machineCategories.has(categoryName) ? "MACHINE" : "SPARE";
   if (row.price) {
     row.price = cleanPrice(row.price);
+  }
+  if (row.previousPrice) {
+    row.previousPrice = cleanPrice(row.previousPrice);
   }
   row.stock = cleanStock(row.stock ?? "");
   if (row.imageUrls) {

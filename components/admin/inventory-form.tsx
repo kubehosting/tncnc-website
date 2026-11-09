@@ -21,6 +21,10 @@ type Machine = {
   description: string | null;
   categoryId: string;
   used: boolean;
+  sku: string | null;
+  subcategory: string | null;
+  childCategory: string | null;
+  previousPrice: string | null;
   images: { url: string }[];
 };
 
@@ -30,9 +34,13 @@ const field =
 export function InventoryForm({
   categories,
   machine,
+  subcategories = [],
+  childCategories = [],
 }: {
   categories: Category[];
   machine?: Machine;
+  subcategories?: string[];
+  childCategories?: string[];
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -68,6 +76,10 @@ export function InventoryForm({
         location: String(form.get("location") ?? ""),
         stock: Number(form.get("stock") ?? 1),
         price: form.get("price") ? Number(form.get("price")) : null,
+        previousPrice: form.get("previousPrice") ? Number(form.get("previousPrice")) : null,
+        sku: String(form.get("sku") ?? ""),
+        subcategory: String(form.get("subcategory") ?? ""),
+        childCategory: String(form.get("childCategory") ?? ""),
         status: String(form.get("status") ?? "AVAILABLE"),
         type: String(form.get("type") ?? ""),
         description: String(form.get("description") ?? ""),
@@ -163,7 +175,51 @@ export function InventoryForm({
           <input name="stock" type="number" min="0" required defaultValue={machine?.stock ?? 1} className={`${field} mt-1`} />
         </label>
         <label className="block text-sm font-medium text-slate-700">
-          Price (INR)
+          SKU
+          <input name="sku" defaultValue={machine?.sku ?? ""} className={`${field} mt-1`} placeholder="10000001" />
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Subcategory
+          <input
+            name="subcategory"
+            list="subcategory-options"
+            defaultValue={machine?.subcategory ?? ""}
+            className={`${field} mt-1`}
+            placeholder="Cnc Lathe"
+          />
+          <datalist id="subcategory-options">
+            {subcategories.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Child category
+          <input
+            name="childCategory"
+            list="child-category-options"
+            defaultValue={machine?.childCategory ?? ""}
+            className={`${field} mt-1`}
+            placeholder="Servo Motor"
+          />
+          <datalist id="child-category-options">
+            {childCategories.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Previous price (INR)
+          <input
+            name="previousPrice"
+            type="number"
+            min="0"
+            defaultValue={machine?.previousPrice ?? ""}
+            className={`${field} mt-1`}
+          />
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Current price (INR)
           <input
             name="price"
             type="number"

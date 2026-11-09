@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { StatusPill } from "@/components/admin/admin-ui";
+import { PriceTag } from "@/components/price-tag";
 import { adminFetch } from "@/lib/admin-fetch";
 
 type Row = {
@@ -13,6 +14,11 @@ type Row = {
   stock: number;
   status: "AVAILABLE" | "SOLD";
   category: { id: string; name: string };
+  sku: string | null;
+  subcategory: string | null;
+  childCategory: string | null;
+  price: string | null;
+  previousPrice: string | null;
 };
 
 type Category = {
@@ -139,7 +145,18 @@ export function InventoryBoard({ rows, categories }: { rows: Row[]; categories: 
                     className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                   >
                     <h3 className="font-semibold leading-snug text-navy">{row.name}</h3>
+                    {row.sku ? <p className="mt-1 text-xs font-semibold text-slate-500">SKU {row.sku}</p> : null}
+                    <p className="mt-1 text-xs text-slate-500">
+                      {[row.category.name, row.subcategory, row.childCategory].filter(Boolean).join(" · ")}
+                    </p>
                     <p className="mt-1 text-xs text-slate-500">{row.brand?.trim() || "No brand"}</p>
+                    <div className="mt-2">
+                      <PriceTag
+                        price={row.price != null ? Number(row.price) : null}
+                        previousPrice={row.previousPrice != null ? Number(row.previousPrice) : null}
+                        size="sm"
+                      />
+                    </div>
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <p className="text-sm text-slate-600">
                         Stock <span className="font-semibold text-navy">{row.stock}</span>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PriceTag } from "@/components/price-tag";
 import { ProductActions } from "@/components/product-actions";
 import { ProductGallery } from "@/components/product-gallery";
 import { ProductTabs } from "@/components/product-tabs";
@@ -49,7 +50,11 @@ function catalogProduct(machine: Machine): ProductDetail {
     condition: machine.condition === "—" ? "" : machine.condition,
     location: machine.location === "—" ? "" : machine.location,
     stock: 1,
-    price: null,
+    price: machine.price ?? null,
+    previousPrice: machine.previousPrice ?? null,
+    sku: machine.sku ?? "",
+    subcategory: machine.subcategory ?? "",
+    childCategory: machine.childCategory ?? "",
     description: machine.description,
     images: [machine.image],
     weight: "",
@@ -58,17 +63,6 @@ function catalogProduct(machine: Machine): ProductDetail {
     featured: machine.featured,
     used: machine.used,
   };
-}
-
-function money(price: number | null) {
-  if (price == null) {
-    return "Price on request";
-  }
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(price);
 }
 
 function shown(value: string) {
@@ -178,6 +172,10 @@ export default async function MachineDetailPage({
   const condition = shown(product.condition) || "Ask";
   const conditionGood = /excellent|good|verified|ready/i.test(condition);
   const facts = [
+    ["SKU", product.sku || "—", false],
+    ["Category", product.category || "—", false],
+    ["Subcategory", product.subcategory || "—", false],
+    ["Child category", product.childCategory || "—", false],
     ["Condition", condition, conditionGood],
     ["Year", shown(product.year) || "—", false],
     ["Location", shown(product.location) || "India", false],
@@ -218,8 +216,14 @@ export default async function MachineDetailPage({
                 {product.used ? "Used Machine" : "CNC Machine"}
               </span>
               <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">{product.name}</h1>
-              <p className="mt-1 text-lg text-slate-500">{shown(product.type) || product.category}</p>
-              <p className="mt-2 text-2xl font-extrabold text-navy">{money(product.price)}</p>
+              <p className="mt-1 text-lg text-slate-500">
+                {[product.category, product.subcategory, product.childCategory].filter(Boolean).join(" · ") ||
+                  shown(product.type)}
+              </p>
+              {product.sku ? <p className="mt-1 text-sm font-semibold text-slate-500">SKU {product.sku}</p> : null}
+              <div className="mt-2">
+                <PriceTag price={product.price} previousPrice={product.previousPrice} size="lg" />
+              </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <Trust icon="shield" title="Verified Machine" text="Quality Checked" />

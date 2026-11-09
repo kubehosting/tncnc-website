@@ -81,6 +81,18 @@ export function machineCreateInput(body: Record<string, unknown>) {
   if (body.price !== undefined && body.price !== null && price === undefined) {
     return { error: jsonError("price must be a number") };
   }
+  const previousPrice =
+    body.previousPrice === undefined || body.previousPrice === null || body.previousPrice === ""
+      ? null
+      : asDecimal(body.previousPrice);
+  if (
+    body.previousPrice !== undefined &&
+    body.previousPrice !== null &&
+    body.previousPrice !== "" &&
+    previousPrice === undefined
+  ) {
+    return { error: jsonError("previous price must be a number") };
+  }
   if (body.status !== undefined && !asMachineStatus(body.status)) {
     return { error: jsonError("status must be AVAILABLE or SOLD") };
   }
@@ -101,6 +113,10 @@ export function machineCreateInput(body: Record<string, unknown>) {
       condition: asOptionalString(body.condition) ?? null,
       location: asOptionalString(body.location) ?? null,
       price,
+      previousPrice,
+      sku: asOptionalString(body.sku) ?? null,
+      subcategory: asOptionalString(body.subcategory) ?? null,
+      childCategory: asOptionalString(body.childCategory) ?? null,
       status: asMachineStatus(body.status) ?? MachineStatus.AVAILABLE,
       type: asOptionalString(body.type) ?? null,
       description: asOptionalString(body.description) ?? null,
@@ -161,6 +177,22 @@ export function machineUpdateInput(body: Record<string, unknown>) {
       return { error: jsonError("price must be a number") };
     }
     data.price = price;
+  }
+  if (body.previousPrice !== undefined) {
+    const previousPrice = asDecimal(body.previousPrice);
+    if (body.previousPrice !== null && body.previousPrice !== "" && previousPrice === undefined) {
+      return { error: jsonError("previous price must be a number") };
+    }
+    data.previousPrice = previousPrice ?? null;
+  }
+  if (body.sku !== undefined) {
+    data.sku = asOptionalString(body.sku);
+  }
+  if (body.subcategory !== undefined) {
+    data.subcategory = asOptionalString(body.subcategory);
+  }
+  if (body.childCategory !== undefined) {
+    data.childCategory = asOptionalString(body.childCategory);
   }
   if (body.status !== undefined) {
     const status = asMachineStatus(body.status);

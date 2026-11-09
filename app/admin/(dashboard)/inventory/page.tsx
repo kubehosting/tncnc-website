@@ -18,6 +18,11 @@ export default async function AdminInventoryPage() {
         stock: true,
         status: true,
         category: { select: { id: true, name: true } },
+        sku: true,
+        subcategory: true,
+        childCategory: true,
+        price: true,
+        previousPrice: true,
       },
     }),
     prisma.category.findMany({
@@ -54,7 +59,14 @@ export default async function AdminInventoryPage() {
           </div>
         }
       />
-      <InventoryBoard rows={machines} categories={categories} />
+      <InventoryBoard
+        rows={machines.map((machine) => ({
+          ...machine,
+          price: machine.price?.toString() ?? null,
+          previousPrice: machine.previousPrice?.toString() ?? null,
+        }))}
+        categories={categories}
+      />
     </>
   );
 }

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { CatalogFilters } from "@/components/catalog-filters";
 import { EnquiryForm } from "@/components/enquiry-form";
 import { PageHero } from "@/components/page-hero";
 import { MachineCard } from "@/components/machine-card";
 import { spareParts as catalogSpares } from "@/lib/catalog";
-import { listPublicCategories, listPublicMachines } from "@/lib/site-content";
+import { listFilteredMachines, listPublicCategories } from "@/lib/site-content";
 
 export const metadata: Metadata = {
   title: "Spare Parts",
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function SparePartsPage({
   searchParams,
 }: PageProps<"/spare-parts">) {
-  const { type } = await searchParams;
+  const { type, sub, child, sku } = await searchParams;
   const categories = await listPublicCategories("SPARE");
   const selected =
     typeof type === "string"
@@ -34,7 +35,13 @@ export default async function SparePartsPage({
           name: part.name,
           imageUrl: null as string | null,
         }));
-  const products = typeof type === "string" ? await listPublicMachines({ type }) : [];
+  const category = typeof type === "string" ? type : undefined;
+  const subcategory = typeof sub === "string" ? sub : undefined;
+  const childCategory = typeof child === "string" ? child : undefined;
+  const skuQuery = typeof sku === "string" ? sku : undefined;
+  const { products, subcategories, children } = category
+    ? await listFilteredMachines({ type: category, subcategory, childCategory, sku: skuQuery })
+    : { products: [], subcategories: [], children: [] };
 
   return (
     <>
@@ -44,11 +51,28 @@ export default async function SparePartsPage({
       />
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 lg:grid-cols-[1fr_360px] lg:px-6">
         <div className="space-y-8">
-        {products.length > 0 ? (
-          <div className="grid gap-5 sm:grid-cols-2">
-            {products.map((machine) => (
-              <MachineCard key={machine.slug} machine={machine} />
-            ))}
+        {category ? (
+          <div className="grid gap-6 lg:grid-cols-[230px_1fr]">
+            <CatalogFilters
+              basePath="/spare-parts"
+              type={category}
+              subcategories={subcategories}
+              children={children}
+              subcategory={subcategory}
+              childCategory={childCategory}
+              sku={skuQuery}
+            />
+            {products.length > 0 ? (
+              <div className="grid gap-5 sm:grid-cols-2">
+                {products.map((machine) => (
+                  <MachineCard key={machine.slug} machine={machine} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
+                No products match these filters.
+              </p>
+            )}
           </div>
         ) : null}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

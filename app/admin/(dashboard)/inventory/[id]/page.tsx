@@ -7,13 +7,19 @@ import { prisma } from "@/lib/prisma";
 export const metadata: Metadata = { title: "Edit inventory item" };
 export const dynamic = "force-dynamic";
 
+function uniqueNames(values: Array<string | null>) {
+  return [...new Set(values.map((value) => value?.trim() ?? "").filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+}
+
 export default async function EditInventoryPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [categories, machine] = await Promise.all([
+  const [categories, machine, hints] = await Promise.all([
     prisma.category.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true },
@@ -21,6 +27,9 @@ export default async function EditInventoryPage({
     prisma.machine.findUnique({
       where: { id },
       include: { images: { orderBy: { sortOrder: "asc" } } },
+    }),
+    prisma.machine.findMany({
+      select: { subcategory: true, childCategory: true },
     }),
   ]);
 
@@ -36,6 +45,8 @@ export default async function EditInventoryPage({
       />
       <InventoryForm
         categories={categories}
+        subcategories={uniqueNames(hints.map((item) => item.subcategory))}
+        childCategories={uniqueNames(hints.map((item) => item.childCategory))}
         machine={{
           id: machine.id,
           name: machine.name,
@@ -51,6 +62,10 @@ export default async function EditInventoryPage({
           description: machine.description,
           categoryId: machine.categoryId,
           used: machine.used,
+          sku: machine.sku,
+          subcategory: machine.subcategory,
+          childCategory: machine.childCategory,
+          previousPrice: machine.previousPrice?.toString() ?? null,
           images: machine.images.map((image) => ({ url: image.url })),
         }}
       />

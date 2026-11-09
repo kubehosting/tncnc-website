@@ -39,7 +39,8 @@ export function BulkUploadForm({ categories }: { categories: { name: string; slu
       <div className="rounded-xl bg-white p-5 shadow-sm">
         <p className="text-sm text-slate-600">
           Upload a CSV or Excel file. The shop product download (.xlsx with sku, category_name,
-          and photo) is accepted, and missing categories are created. Matching SKUs are updated.
+          subcategory_name, childcategory_name, price, previous_price, and photo) is accepted, and
+          missing categories are created. Matching SKUs are updated.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <a

@@ -29,7 +29,12 @@ export function toListingMachine(machine: {
   featured: boolean;
   used: boolean;
   images: { url: string }[];
-  category: { name: string };
+  category: { name: string; slug?: string };
+  sku?: string | null;
+  subcategory?: string | null;
+  childCategory?: string | null;
+  price?: { toString(): string } | number | null;
+  previousPrice?: { toString(): string } | number | null;
 }): Machine {
   return {
     slug: machine.slug,
@@ -45,6 +50,12 @@ export function toListingMachine(machine: {
     featured: machine.featured,
     used: machine.used,
     description: machine.description ?? "",
+    sku: machine.sku ?? "",
+    subcategory: machine.subcategory ?? "",
+    childCategory: machine.childCategory ?? "",
+    categoryName: machine.category.name,
+    price: machine.price != null ? Number(machine.price) : null,
+    previousPrice: machine.previousPrice != null ? Number(machine.previousPrice) : null,
   };
 }
 
@@ -142,6 +153,65 @@ export async function listPublicMachines(options?: {
   }
 }
 
+export type CatalogFacet = {
+  label: string;
+  count: number;
+};
+
+function facetCounts(machines: Machine[], pick: (machine: Machine) => string | undefined) {
+  const counts = new Map<string, CatalogFacet>();
+  for (const machine of machines) {
+    const label = (pick(machine) ?? "").trim();
+    if (!label) {
+      continue;
+    }
+    const key = label.toLowerCase();
+    const current = counts.get(key);
+    if (current) {
+      current.count += 1;
+    } else {
+      counts.set(key, { label, count: 1 });
+    }
+  }
+  return [...counts.values()].sort((left, right) => left.label.localeCompare(right.label));
+}
+
+export async function listFilteredMachines(options?: {
+  used?: boolean;
+  type?: string;
+  kind?: CategoryKind;
+  subcategory?: string;
+  childCategory?: string;
+  sku?: string;
+}) {
+  const machines = await listPublicMachines({
+    used: options?.used,
+    type: options?.type,
+    kind: options?.kind,
+  });
+  const subcategory = options?.subcategory?.trim().toLowerCase() ?? "";
+  const childCategory = options?.childCategory?.trim().toLowerCase() ?? "";
+  const sku = options?.sku?.trim().toLowerCase() ?? "";
+  const subcategories = facetCounts(machines, (machine) => machine.subcategory);
+  const childPool = subcategory
+    ? machines.filter((machine) => (machine.subcategory ?? "").trim().toLowerCase() === subcategory)
+    : machines;
+  const children = facetCounts(childPool, (machine) => machine.childCategory);
+  const products = machines.filter((machine) => {
+    if (subcategory && (machine.subcategory ?? "").trim().toLowerCase() !== subcategory) {
+      return false;
+    }
+    if (childCategory && (machine.childCategory ?? "").trim().toLowerCase() !== childCategory) {
+      return false;
+    }
+    if (sku && !(machine.sku ?? "").toLowerCase().includes(sku)) {
+      return false;
+    }
+    return true;
+  });
+  return { products, subcategories, children };
+}
+
 export async function searchPublicMachines(query: string, limit = 24) {
   const needle = query.trim().toLowerCase();
   if (needle.length < 2) {
@@ -171,6 +241,9 @@ export async function searchPublicMachines(query: string, limit = 24) {
           machine.condition,
           machine.category.name,
           machine.slug,
+          machine.sku,
+          machine.subcategory,
+          machine.childCategory,
           machine.year,
         ]),
       )
@@ -208,6 +281,10 @@ export type ProductDetail = {
   location: string;
   stock: number;
   price: number | null;
+  previousPrice: number | null;
+  sku: string;
+  subcategory: string;
+  childCategory: string;
   description: string;
   images: string[];
   weight: string;
@@ -273,6 +350,10 @@ export async function getProductDetail(slug: string): Promise<ProductDetail | nu
       location: machine.location ?? specValue(specs, ["location"]) ?? "",
       stock: machine.stock,
       price: machine.price != null ? Number(machine.price) : null,
+      previousPrice: machine.previousPrice != null ? Number(machine.previousPrice) : null,
+      sku: machine.sku ?? "",
+      subcategory: machine.subcategory ?? "",
+      childCategory: machine.childCategory ?? "",
       description: machine.description ?? "",
       images: machine.images.map((image) => mediaUrl(image.url)),
       weight: specValue(specs, ["weight"]),

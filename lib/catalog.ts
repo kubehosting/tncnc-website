@@ -48,6 +48,12 @@ export type Machine = {
   featured: boolean;
   used: boolean;
   description: string;
+  sku?: string;
+  subcategory?: string;
+  childCategory?: string;
+  categoryName?: string;
+  price?: number | null;
+  previousPrice?: number | null;
 };
 
 export const machines: Machine[] = [

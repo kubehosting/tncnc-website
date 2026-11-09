@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { PriceTag } from "@/components/price-tag";
 import type { Machine } from "@/lib/catalog";
 import { whatsappLink } from "@/lib/catalog";
 
@@ -23,7 +24,14 @@ export function MachineCard({ machine }: { machine: Machine }) {
             {machine.name}
           </Link>
         </h3>
-        <p className="mt-1 text-sm text-slate-600">{machine.type}</p>
+        {machine.sku ? <p className="mt-1 text-xs font-semibold text-slate-500">SKU {machine.sku}</p> : null}
+        <p className="mt-1 text-sm text-slate-600">
+          {[machine.categoryName, machine.subcategory, machine.childCategory].filter(Boolean).join(" · ") ||
+            machine.type}
+        </p>
+        <div className="mt-2">
+          <PriceTag price={machine.price} previousPrice={machine.previousPrice} size="sm" />
+        </div>
         <p className="mt-2 text-xs leading-5 text-slate-500">
           Year {machine.year} | {machine.control}
           <br />
