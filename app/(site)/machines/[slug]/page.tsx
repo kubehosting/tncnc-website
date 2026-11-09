@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EnquiryForm } from "@/components/enquiry-form";
 import { ProductGallery } from "@/components/product-gallery";
-import { getMachine, whatsappLink, type Machine } from "@/lib/catalog";
+import { PurchaseOptions } from "@/components/purchase-options";
+import { getMachine, type Machine } from "@/lib/catalog";
 import { getProductDetail, type ProductDetail } from "@/lib/site-content";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,10 @@ export default async function MachineDetailPage({
   if (!product) {
     notFound();
   }
+  const salesPeople = await prisma.adminUser
+    .findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { name: true } })
+    .then((people) => people.map((person) => person.name))
+    .catch(() => []);
 
   const facts = [
     ["Inventory number", product.slug],
@@ -157,32 +162,12 @@ export default async function MachineDetailPage({
             </div>
           </section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Purchase options</p>
-            <h2 className="text-lg font-bold text-navy">Ready to purchase?</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Ask for this item, or send your offer to the sales desk.
-            </p>
-            <div className="mt-4 grid gap-2">
-              <a
-                href={whatsappLink(`Hi TNCNC, I want details and a quote for ${product.name} (${product.slug}).`)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-lg bg-gold px-4 py-3 text-center text-sm font-bold text-navy hover:bg-gold-hover"
-              >
-                Request on WhatsApp
-              </a>
-              <Link
-                href="/contact"
-                className="rounded-lg border border-slate-300 px-4 py-3 text-center text-sm font-bold text-navy"
-              >
-                Contact sales
-              </Link>
-            </div>
-            <div className="mt-5">
-              <EnquiryForm heading="Make an enquiry" submitLabel="Send enquiry" />
-            </div>
-          </section>
+          <PurchaseOptions
+            slug={product.slug}
+            name={product.name}
+            price={product.price}
+            salesPeople={salesPeople}
+          />
         </div>
       </div>
     </div>
