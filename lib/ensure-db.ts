@@ -23,9 +23,29 @@ async function applySchema() {
     }
   }
 
+  await ensureMachineColumns();
+
   try {
     await ensureDefaultAdmin();
   } catch (error) {
     console.error("Could not create the default admin user.", error);
+  }
+}
+
+async function ensureMachineColumns() {
+  const columns = await prisma.$queryRawUnsafe<Array<{ name: string }>>(`PRAGMA table_info("Machine")`);
+  const present = new Set(columns.map((column) => column.name));
+  const additions: Array<[string, string]> = [
+    ["previousPrice", "DECIMAL"],
+    ["sku", "TEXT"],
+    ["subcategory", "TEXT"],
+    ["childCategory", "TEXT"],
+    ["deletedAt", "DATETIME"],
+  ];
+  for (const [name, type] of additions) {
+    if (present.has(name)) {
+      continue;
+    }
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Machine" ADD COLUMN "${name}" ${type}`);
   }
 }

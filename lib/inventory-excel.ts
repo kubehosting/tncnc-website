@@ -1,3 +1,4 @@
+import { ensureDatabase } from "@/lib/ensure-db";
 import { prisma } from "@/lib/prisma";
 
 function xmlText(value: string) {
@@ -7,7 +8,7 @@ function xmlText(value: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;")
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, "");
 }
 
 function stringCell(value: string | number | boolean | null | undefined) {
@@ -50,41 +51,65 @@ const headers = [
 ];
 
 export async function buildInventoryExcel() {
-  const machines = await prisma.machine.findMany({
-    where: { deletedAt: null },
-    orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
-    include: {
-      category: { select: { name: true, kind: true } },
-      images: { orderBy: { sortOrder: "asc" }, select: { url: true } },
-    },
+  await ensureDatabase();
+  const [machines, categories] = await Promise.all([
+    prisma.machine.findMany({
+      where: { deletedAt: null },
+      orderBy: { name: "asc" },
+      include: {
+        images: { orderBy: { sortOrder: "asc" }, select: { url: true } },
+      },
+    }),
+    prisma.category.findMany({ select: { id: true, name: true, kind: true, sortOrder: true } }),
+  ]);
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+  const sorted = [...machines].sort((left, right) => {
+    const leftCategory = categoryById.get(left.categoryId);
+    const rightCategory = categoryById.get(right.categoryId);
+    const categoryOrder = (leftCategory?.sortOrder ?? 9999) - (rightCategory?.sortOrder ?? 9999);
+    if (categoryOrder !== 0) {
+      return categoryOrder;
+    }
+    return left.name.localeCompare(right.name);
   });
 
-  const rows = machines.map((machine) => {
-    const price = machine.price != null ? Number(machine.price) : null;
-    return [
-      stringCell(machine.name),
-      stringCell(machine.slug),
-      stringCell(machine.category.name),
-      stringCell(machine.subcategory),
-      stringCell(machine.childCategory),
-      stringCell(machine.sku),
-      stringCell(machine.category.kind === "SPARE" ? "Spare part" : "Machine"),
-      stringCell(machine.brand),
-      stringCell(machine.type),
-      numberCell(machine.year),
-      stringCell(machine.controller),
-      stringCell(machine.condition),
-      stringCell(machine.location),
-      numberCell(machine.stock),
-      stringCell(machine.status),
-      numberCell(machine.previousPrice != null ? Number(machine.previousPrice) : null),
-      numberCell(price),
-      stringCell(machine.used ? "Yes" : "No"),
-      stringCell(machine.featured ? "Yes" : "No"),
-      stringCell(machine.description),
-      stringCell(machine.images.map((image) => image.url).join("; ")),
-      stringCell(machine.updatedAt.toISOString().slice(0, 19).replace("T", " ")),
-    ].join("");
+  const rows = sorted.flatMap((machine) => {
+    try {
+      const category = categoryById.get(machine.categoryId);
+      const price = machine.price != null ? Number(machine.price) : null;
+      const previousPrice = machine.previousPrice != null ? Number(machine.previousPrice) : null;
+      const updated =
+        machine.updatedAt instanceof Date && !Number.isNaN(machine.updatedAt.getTime())
+          ? machine.updatedAt.toISOString().slice(0, 19).replace("T", " ")
+          : "";
+      return [[
+        stringCell(machine.name),
+        stringCell(machine.slug),
+        stringCell(category?.name ?? ""),
+        stringCell(machine.subcategory),
+        stringCell(machine.childCategory),
+        stringCell(machine.sku),
+        stringCell(category?.kind === "SPARE" ? "Spare part" : "Machine"),
+        stringCell(machine.brand),
+        stringCell(machine.type),
+        numberCell(machine.year),
+        stringCell(machine.controller),
+        stringCell(machine.condition),
+        stringCell(machine.location),
+        numberCell(machine.stock),
+        stringCell(machine.status),
+        numberCell(Number.isFinite(previousPrice) ? previousPrice : null),
+        numberCell(Number.isFinite(price) ? price : null),
+        stringCell(machine.used ? "Yes" : "No"),
+        stringCell(machine.featured ? "Yes" : "No"),
+        stringCell(machine.description),
+        stringCell(machine.images.map((image) => image.url).join("; ")),
+        stringCell(updated),
+      ].join("")];
+    } catch (error) {
+      console.error(`Skipped ${machine.name} during inventory export.`, error);
+      return [];
+    }
   });
 
   const headerRow = headers.map((header) => stringCell(header)).join("");

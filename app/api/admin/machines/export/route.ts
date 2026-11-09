@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   try {
     const file = await buildInventoryExcel();
-    return new Response(file.body, {
+    return new Response(new Uint8Array(file.body), {
       headers: {
         "Content-Type": "application/vnd.ms-excel; charset=utf-8",
         "Content-Disposition": `attachment; filename="${file.filename}"`,
@@ -21,6 +21,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-      return jsonError("Could not export inventory", 500);
+    console.error("Inventory export failed.", error);
+    const detail = error instanceof Error ? error.message.split("\n")[0].slice(0, 240) : "";
+    return jsonError(detail ? `Could not export inventory. ${detail}` : "Could not export inventory", 500);
   }
 }
