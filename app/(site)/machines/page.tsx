@@ -6,7 +6,7 @@ import { machines as catalogMachines } from "@/lib/catalog";
 import { listFilteredMachines } from "@/lib/site-content";
 
 export const metadata: Metadata = {
-  title: "CNC Machines",
+  title: "All Machines",
 };
 export const dynamic = "force-dynamic";
 
@@ -18,39 +18,36 @@ export default async function MachinesPage({
   const subcategory = typeof sub === "string" ? sub : undefined;
   const childCategory = typeof child === "string" ? child : undefined;
   const skuQuery = typeof sku === "string" ? sku : undefined;
-  const { products, subcategories, children } = await listFilteredMachines({
+  const { products, categories, subcategories, children } = await listFilteredMachines({
     type: category,
-    kind: category ? undefined : "MACHINE",
     subcategory,
     childCategory,
     sku: skuQuery,
   });
   const filtering = Boolean(category || subcategory || childCategory || skuQuery);
   const machines = products.length || filtering ? products : catalogMachines;
-  const categoryName = products[0]?.categoryName;
+  const categoryName = category
+    ? categories.find((item) => item.value?.toLowerCase() === category.toLowerCase())?.label ??
+      products[0]?.categoryName
+    : undefined;
 
   return (
     <>
       <PageHero
-        title={categoryName ?? "CNC Machines"}
-        subtitle="Choose a category, then use the filters to narrow by subcategory, child category, or SKU."
+        title={categoryName ?? "All Machines"}
+        subtitle="Filter the full catalog by category, subcategory, child category, or SKU."
       />
-      <div
-        className={`mx-auto grid max-w-7xl gap-6 px-4 py-10 lg:px-6 ${
-          category ? "lg:grid-cols-[250px_1fr]" : ""
-        }`}
-      >
-        {category ? (
-          <CatalogFilters
-            basePath="/machines"
-            type={category}
-            subcategories={subcategories}
-            children={children}
-            subcategory={subcategory}
-            childCategory={childCategory}
-            sku={skuQuery}
-          />
-        ) : null}
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 lg:grid-cols-[250px_1fr] lg:px-6">
+        <CatalogFilters
+          basePath="/machines"
+          categories={categories}
+          type={category}
+          subcategories={subcategories}
+          children={children}
+          subcategory={subcategory}
+          childCategory={childCategory}
+          sku={skuQuery}
+        />
         {machines.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
             No products match these filters.

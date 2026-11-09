@@ -3,11 +3,12 @@ import type { CatalogFacet } from "@/lib/site-content";
 
 function filterHref(
   basePath: string,
-  type: string,
-  next: { sub?: string; child?: string; sku?: string },
+  next: { type?: string; sub?: string; child?: string; sku?: string },
 ) {
   const params = new URLSearchParams();
-  params.set("type", type);
+  if (next.type) {
+    params.set("type", next.type);
+  }
   if (next.sub) {
     params.set("sub", next.sub);
   }
@@ -17,11 +18,13 @@ function filterHref(
   if (next.sku) {
     params.set("sku", next.sku);
   }
-  return `${basePath}?${params.toString()}`;
+  const query = params.toString();
+  return query ? `${basePath}?${query}` : basePath;
 }
 
 export function CatalogFilters({
   basePath,
+  categories,
   type,
   subcategories,
   children,
@@ -30,31 +33,37 @@ export function CatalogFilters({
   sku,
 }: {
   basePath: string;
-  type: string;
+  categories?: CatalogFacet[];
+  type?: string;
   subcategories: CatalogFacet[];
   children: CatalogFacet[];
   subcategory?: string;
   childCategory?: string;
   sku?: string;
 }) {
+  const selectedType = type?.trim() ?? "";
   const selectedSub = subcategory?.trim() ?? "";
   const selectedChild = childCategory?.trim() ?? "";
   const selectedSku = sku?.trim() ?? "";
-  const hasFilters = Boolean(selectedSub || selectedChild || selectedSku);
+  const lockedType = !categories?.length && Boolean(selectedType);
+  const hasFilters = Boolean(
+    selectedSub || selectedChild || selectedSku || (!lockedType && selectedType),
+  );
+  const keptType = lockedType ? selectedType : undefined;
 
   return (
     <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-navy">Filter</h2>
         {hasFilters ? (
-          <Link href={`${basePath}?type=${encodeURIComponent(type)}`} className="text-xs font-semibold text-rose-700">
+          <Link href={filterHref(basePath, { type: keptType })} className="text-xs font-semibold text-rose-700">
             Clear
           </Link>
         ) : null}
       </div>
 
       <form method="get" className="mt-4">
-        <input type="hidden" name="type" value={type} />
+        {selectedType ? <input type="hidden" name="type" value={selectedType} /> : null}
         {selectedSub ? <input type="hidden" name="sub" value={selectedSub} /> : null}
         {selectedChild ? <input type="hidden" name="child" value={selectedChild} /> : null}
         <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -71,30 +80,46 @@ export function CatalogFilters({
         </button>
       </form>
 
+      {categories?.length ? (
+        <FilterGroup
+          title="Category"
+          options={categories}
+          selected={selectedType}
+          hrefFor={(option) =>
+            filterHref(basePath, {
+              type: option.value === selectedType ? undefined : option.value,
+              sku: selectedSku,
+            })
+          }
+          clearHref={filterHref(basePath, { sku: selectedSku })}
+        />
+      ) : null}
       <FilterGroup
         title="Subcategory"
         options={subcategories}
         selected={selectedSub}
-        hrefFor={(label) =>
-          filterHref(basePath, type, {
-            sub: label.toLowerCase() === selectedSub.toLowerCase() ? undefined : label,
+        hrefFor={(option) =>
+          filterHref(basePath, {
+            type: selectedType,
+            sub: option.label.toLowerCase() === selectedSub.toLowerCase() ? undefined : option.label,
             sku: selectedSku,
           })
         }
-        clearHref={filterHref(basePath, type, { sku: selectedSku })}
+        clearHref={filterHref(basePath, { type: selectedType, sku: selectedSku })}
       />
       <FilterGroup
         title="Child category"
         options={children}
         selected={selectedChild}
-        hrefFor={(label) =>
-          filterHref(basePath, type, {
+        hrefFor={(option) =>
+          filterHref(basePath, {
+            type: selectedType,
             sub: selectedSub,
-            child: label.toLowerCase() === selectedChild.toLowerCase() ? undefined : label,
+            child: option.label.toLowerCase() === selectedChild.toLowerCase() ? undefined : option.label,
             sku: selectedSku,
           })
         }
-        clearHref={filterHref(basePath, type, { sub: selectedSub, sku: selectedSku })}
+        clearHref={filterHref(basePath, { type: selectedType, sub: selectedSub, sku: selectedSku })}
       />
     </aside>
   );
@@ -110,7 +135,7 @@ function FilterGroup({
   title: string;
   options: CatalogFacet[];
   selected: string;
-  hrefFor: (label: string) => string;
+  hrefFor: (option: CatalogFacet) => string;
   clearHref: string;
 }) {
   if (options.length === 0) {
@@ -119,7 +144,7 @@ function FilterGroup({
   return (
     <div className="mt-5">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
-      <ul className="mt-2 space-y-1">
+      <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto">
         <li>
           <Link
             href={clearHref}
@@ -131,11 +156,12 @@ function FilterGroup({
           </Link>
         </li>
         {options.map((option) => {
-          const active = option.label.toLowerCase() === selected.toLowerCase();
+          const value = option.value ?? option.label;
+          const active = value.toLowerCase() === selected.toLowerCase();
           return (
-            <li key={option.label}>
+            <li key={value}>
               <Link
-                href={hrefFor(option.label)}
+                href={hrefFor(option)}
                 className={`flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-sm ${
                   active ? "bg-amber-50 font-semibold text-navy" : "text-slate-700 hover:bg-slate-50"
                 }`}

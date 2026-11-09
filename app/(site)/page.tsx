@@ -116,7 +116,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
             <p className="rounded-full bg-navy px-3 py-1 text-xs font-bold text-white">
               {new Intl.NumberFormat("en-IN").format(productCount)} products listed
             </p>
-            <Link href="/used-machines" className="text-sm font-semibold text-navy hover:underline">
+            <Link href="/machines" className="text-sm font-semibold text-navy hover:underline">
               View All Machines →
             </Link>
           </div>

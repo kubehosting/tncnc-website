@@ -54,6 +54,7 @@ export function toListingMachine(machine: {
     subcategory: machine.subcategory ?? "",
     childCategory: machine.childCategory ?? "",
     categoryName: machine.category.name,
+    categorySlug: machine.category.slug ?? "",
     price: machine.price != null ? Number(machine.price) : null,
     previousPrice: machine.previousPrice != null ? Number(machine.previousPrice) : null,
   };
@@ -157,6 +158,7 @@ export async function listPublicMachines(options?: {
 export type CatalogFacet = {
   label: string;
   count: number;
+  value?: string;
 };
 
 function facetCounts(machines: Machine[], pick: (machine: Machine) => string | undefined) {
@@ -177,6 +179,24 @@ function facetCounts(machines: Machine[], pick: (machine: Machine) => string | u
   return [...counts.values()].sort((left, right) => left.label.localeCompare(right.label));
 }
 
+function categoryFacets(machines: Machine[]) {
+  const counts = new Map<string, CatalogFacet>();
+  for (const machine of machines) {
+    const value = machine.categorySlug?.trim();
+    const label = machine.categoryName?.trim();
+    if (!value || !label) {
+      continue;
+    }
+    const current = counts.get(value);
+    if (current) {
+      current.count += 1;
+    } else {
+      counts.set(value, { label, value, count: 1 });
+    }
+  }
+  return [...counts.values()].sort((left, right) => left.label.localeCompare(right.label));
+}
+
 export async function listFilteredMachines(options?: {
   used?: boolean;
   type?: string;
@@ -187,18 +207,22 @@ export async function listFilteredMachines(options?: {
 }) {
   const machines = await listPublicMachines({
     used: options?.used,
-    type: options?.type,
-    kind: options?.kind,
+    kind: options?.type ? undefined : options?.kind,
   });
+  const category = options?.type?.trim().toLowerCase() ?? "";
   const subcategory = options?.subcategory?.trim().toLowerCase() ?? "";
   const childCategory = options?.childCategory?.trim().toLowerCase() ?? "";
   const sku = options?.sku?.trim().toLowerCase() ?? "";
-  const subcategories = facetCounts(machines, (machine) => machine.subcategory);
-  const childPool = subcategory
-    ? machines.filter((machine) => (machine.subcategory ?? "").trim().toLowerCase() === subcategory)
+  const categories = categoryFacets(machines);
+  const inCategory = category
+    ? machines.filter((machine) => (machine.categorySlug ?? "").trim().toLowerCase() === category)
     : machines;
+  const subcategories = facetCounts(inCategory, (machine) => machine.subcategory);
+  const childPool = subcategory
+    ? inCategory.filter((machine) => (machine.subcategory ?? "").trim().toLowerCase() === subcategory)
+    : inCategory;
   const children = facetCounts(childPool, (machine) => machine.childCategory);
-  const products = machines.filter((machine) => {
+  const products = inCategory.filter((machine) => {
     if (subcategory && (machine.subcategory ?? "").trim().toLowerCase() !== subcategory) {
       return false;
     }
@@ -210,7 +234,7 @@ export async function listFilteredMachines(options?: {
     }
     return true;
   });
-  return { products, subcategories, children };
+  return { products, categories, subcategories, children };
 }
 
 export async function searchPublicMachines(query: string, limit = 24) {

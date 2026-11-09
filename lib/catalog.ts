@@ -52,6 +52,7 @@ export type Machine = {
   subcategory?: string;
   childCategory?: string;
   categoryName?: string;
+  categorySlug?: string;
   price?: number | null;
   previousPrice?: number | null;
 };
