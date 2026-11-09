@@ -37,20 +37,30 @@ export async function POST(request: Request) {
     const existing = await prisma.customer.findFirst({
       where: { email },
     });
-    if (existing) {
+    if (existing?.passwordHash) {
       return jsonError("An account with this email already exists. Sign in instead.", 409);
     }
 
     const passwordHash = await hashPassword(password);
-    const customer = await prisma.customer.create({
-      data: {
-        name,
-        email,
-        phone: phone ?? null,
-        passwordHash,
-        lastLoginAt: new Date(),
-      },
-    });
+    const customer = existing
+      ? await prisma.customer.update({
+          where: { id: existing.id },
+          data: {
+            name,
+            phone: phone ?? existing.phone,
+            passwordHash,
+            lastLoginAt: new Date(),
+          },
+        })
+      : await prisma.customer.create({
+          data: {
+            name,
+            email,
+            phone: phone ?? null,
+            passwordHash,
+            lastLoginAt: new Date(),
+          },
+        });
 
     const response = NextResponse.json({
       ok: true,

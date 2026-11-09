@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
+import { CartLink } from "@/components/cart-link";
 import type { NavItem } from "@/lib/site-nav";
 
 export function SiteHeader({
@@ -73,6 +74,7 @@ export function SiteHeader({
               {ctaLabel}
             </Link>
           ) : null}
+          <CartLink />
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded border border-white/20 lg:hidden"
@@ -101,6 +103,13 @@ export function SiteHeader({
               {link.label}
             </Link>
           ))}
+          <Link
+            href="/cart"
+            onClick={() => setOpen(false)}
+            className="block rounded px-2 py-2 text-sm text-white hover:bg-white/10"
+          >
+            Cart
+          </Link>
           {customerName ? (
             <Link
               href="/account"

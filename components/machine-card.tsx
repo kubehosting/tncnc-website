@@ -1,12 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AddToCartButton } from "@/components/add-to-cart-button";
 import type { Machine } from "@/lib/catalog";
 import { whatsappLink } from "@/lib/catalog";
 
 export function MachineCard({ machine }: { machine: Machine }) {
+  const href = `/machines/${machine.slug}`;
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="relative h-44 bg-slate-100">
+      <Link href={href} className="relative block h-44 bg-slate-100">
         <Image
           src={machine.image}
           alt={machine.name}
@@ -14,9 +16,13 @@ export function MachineCard({ machine }: { machine: Machine }) {
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 25vw"
         />
-      </div>
+      </Link>
       <div className="p-4">
-        <h3 className="font-semibold text-navy">{machine.name}</h3>
+        <h3 className="font-semibold text-navy">
+          <Link href={href} className="hover:underline">
+            {machine.name}
+          </Link>
+        </h3>
         <p className="mt-1 text-sm text-slate-600">{machine.type}</p>
         <p className="mt-2 text-xs leading-5 text-slate-500">
           Year {machine.year} | {machine.control}
@@ -30,21 +36,21 @@ export function MachineCard({ machine }: { machine: Machine }) {
             {machine.location}
           </span>
         </p>
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <Link
-            href={`/machines/${machine.slug}`}
-            className="text-sm font-semibold text-navy underline-offset-2 hover:underline"
-          >
-            View Details
-          </Link>
-          <a
-            href={whatsappLink(`Hi TNCNC, I want details on ${machine.name}.`)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded bg-[#25d366] px-3 py-1.5 text-xs font-semibold text-white"
-          >
-            WhatsApp
-          </a>
+        <div className="mt-4 grid gap-2">
+          <AddToCartButton slug={machine.slug} />
+          <div className="flex items-center justify-between gap-2">
+            <Link href={href} className="text-sm font-semibold text-navy underline-offset-2 hover:underline">
+              View Details
+            </Link>
+            <a
+              href={whatsappLink(`Hi TNCNC, I want details on ${machine.name}.`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded bg-[#25d366] px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              WhatsApp
+            </a>
+          </div>
         </div>
       </div>
     </article>

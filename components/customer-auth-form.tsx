@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 export function CustomerAuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -13,6 +13,13 @@ export function CustomerAuthForm({ mode }: { mode: "login" | "signup" }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    const preset = searchParams.get("email");
+    if (preset) {
+      setEmail(preset);
+    }
+  }, [searchParams]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -33,7 +40,8 @@ export function CustomerAuthForm({ mode }: { mode: "login" | "signup" }) {
       return;
     }
     const next = searchParams.get("next") || "/account";
-    router.replace(next.startsWith("/account") ? next : "/account");
+    const safeNext = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/admin") ? next : "/account";
+    router.replace(safeNext);
     router.refresh();
   }
 

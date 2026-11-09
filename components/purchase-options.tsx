@@ -1,19 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { OfferForm } from "@/components/offer-form";
-
-const cartKey = "tncnc-cart";
-
-function readCart() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(cartKey) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
-  } catch {
-    return [];
-  }
-}
+import { addToCart, readCart, removeFromCart, subscribeCart } from "@/lib/cart-client";
 
 export function PurchaseOptions({
   slug,
@@ -26,22 +16,19 @@ export function PurchaseOptions({
   price: number | null;
   salesPeople: string[];
 }) {
-  const [inCart, setInCart] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
-
-  useEffect(() => {
-    setInCart(readCart().includes(slug));
-  }, [slug]);
+  const inCart = useSyncExternalStore(
+    subscribeCart,
+    () => readCart().some((line) => line.slug === slug),
+    () => false,
+  );
 
   function toggleCart() {
-    const next = new Set(readCart());
-    if (next.has(slug)) {
-      next.delete(slug);
-    } else {
-      next.add(slug);
+    if (readCart().some((line) => line.slug === slug)) {
+      removeFromCart(slug);
+      return;
     }
-    localStorage.setItem(cartKey, JSON.stringify([...next]));
-    setInCart(next.has(slug));
+    addToCart(slug);
   }
 
   return (

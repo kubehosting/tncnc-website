@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
+import { AddToCartButton } from "@/components/add-to-cart-button";
 import type { RelatedMachine } from "@/lib/site-content";
 import { whatsappLink } from "@/lib/catalog";
 
@@ -48,21 +49,20 @@ export function SimilarMachines({
               key={machine.slug}
               className="w-[260px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
-              <div className="relative h-40 bg-slate-100">
+              <Link href={`/machines/${machine.slug}`} className="relative block h-40 bg-slate-100">
                 <Image src={machine.image} alt={machine.name} fill className="object-cover" sizes="260px" />
-              </div>
+              </Link>
               <div className="p-4">
-                <h3 className="font-bold text-navy">{machine.name}</h3>
+                <h3 className="font-bold text-navy">
+                  <Link href={`/machines/${machine.slug}`} className="hover:underline">
+                    {machine.name}
+                  </Link>
+                </h3>
                 <p className="mt-1 text-xs text-slate-500">
                   Year {machine.year} | {machine.location}
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Link
-                    href={`/machines/${machine.slug}`}
-                    className="rounded-md border border-navy px-2 py-2 text-center text-xs font-bold text-navy"
-                  >
-                    View Details
-                  </Link>
+                  <AddToCartButton slug={machine.slug} compact />
                   <a
                     href={whatsappLink(`Hi TNCNC, I want details on ${machine.name}.`)}
                     target="_blank"

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CustomerLogoutButton } from "@/components/customer-logout-button";
 import { formatDate, inr } from "@/lib/admin-ui";
 import { getCustomerFromCookies } from "@/lib/customer-auth";
@@ -33,12 +34,16 @@ export default async function CustomerAccountPage() {
       <section className="mt-8 rounded-lg bg-white p-5 shadow-sm">
         <h2 className="font-bold text-navy">Your invoices</h2>
         {invoices.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-600">No invoices yet. Request a quote and we will link it here.</p>
+          <p className="mt-3 text-sm text-slate-600">
+            No invoices yet. Add a machine to your cart and create an invoice from checkout.
+          </p>
         ) : (
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
             {invoices.map((invoice) => (
               <li key={invoice.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <span className="font-medium text-navy">{invoice.invoiceNumber}</span>
+                <Link href={`/account/invoices/${invoice.id}`} className="font-medium text-navy hover:underline">
+                  {invoice.invoiceNumber}
+                </Link>
                 <span>{formatDate(invoice.issuedAt)}</span>
                 <span>{inr(invoice.totalAmount)}</span>
                 <span className="text-slate-500">{invoice.status}</span>
