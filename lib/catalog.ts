@@ -19,7 +19,6 @@ export const navLinks = [
   { href: "/used-machines", label: "Used Machines" },
   { href: "/spare-parts", label: "Spare Parts" },
   { href: "/sell", label: "Sell Your Machine" },
-  { href: "/services", label: "Services" },
   { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
 ] as const;
