@@ -2,6 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
+import {
+  SubcategoryEditor,
+  fromEditorTree,
+  toEditorTree,
+  type EditorNode,
+} from "@/components/admin/subcategory-editor";
 import { adminFetch } from "@/lib/admin-fetch";
 import { mediaUrl } from "@/lib/media-url";
 
@@ -15,6 +21,7 @@ type Category = {
   sortOrder: number;
   showOnHome: boolean;
   _count: { machines: number };
+  subcategories: { name: string; count: number; children: { name: string; count: number }[] }[];
 };
 
 const field =
@@ -23,12 +30,14 @@ const field =
 export function CategoryManager({ initial }: { initial: Category[] }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [kind, setKind] = useState<"MACHINE" | "SPARE">("MACHINE");
   const [sortOrder, setSortOrder] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
   const [showOnHome, setShowOnHome] = useState(true);
+  const [tree, setTree] = useState<EditorNode[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -41,7 +50,9 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
     setSortOrder(String(category.sortOrder));
     setImageUrl(category.imageUrl ?? "");
     setShowOnHome(category.showOnHome);
+    setTree(toEditorTree(category.subcategories));
     setError("");
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function resetForm() {
@@ -52,6 +63,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
     setSortOrder("0");
     setImageUrl("");
     setShowOnHome(true);
+    setTree([]);
     setError("");
   }
 
@@ -71,6 +83,10 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (tree.some((node) => !node.name.trim() || node.children.some((child) => !child.name.trim()))) {
+      setError("Fill in or remove the empty subcategory / child category names before saving.");
+      return;
+    }
     setPending(true);
     setError("");
     const payload = {
@@ -80,6 +96,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
       sortOrder: Number(sortOrder) || 0,
       imageUrl: imageUrl.trim() || null,
       showOnHome,
+      subcategories: fromEditorTree(tree),
     };
     try {
       if (editingId) {
@@ -147,8 +164,9 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
       <form
+        ref={formRef}
         onSubmit={onSubmit}
-        className="h-fit space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        className="h-fit scroll-mt-20 space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
       >
         <h2 className="font-semibold text-navy">
           {editingId ? "Edit category" : "Add category"}
@@ -207,6 +225,7 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
             placeholder="Optional notes for this machine type"
           />
         </label>
+        <SubcategoryEditor tree={tree} onChange={setTree} />
         <div>
           <p className="mb-1.5 text-sm font-medium text-slate-700">Category image</p>
           {imageUrl ? (
@@ -303,6 +322,13 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
                     <div>
                       <p className="font-medium text-navy">{category.name}</p>
                       <p className="text-xs text-slate-500">{category.slug}</p>
+                      {category.subcategories.length ? (
+                        <p className="mt-0.5 text-[11px] text-slate-500">
+                          {category.subcategories.length} subcategor
+                          {category.subcategories.length === 1 ? "y" : "ies"} ·{" "}
+                          {category.subcategories.reduce((sum, node) => sum + node.children.length, 0)} child
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </td>

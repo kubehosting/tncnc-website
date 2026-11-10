@@ -53,9 +53,13 @@ async function ensureMachineColumns() {
 
 async function ensureCategoryColumns() {
   const columns = await prisma.$queryRawUnsafe<Array<{ name: string }>>(`PRAGMA table_info("Category")`);
-  if (!columns.some((column) => column.name === "showOnHome")) {
+  const present = new Set(columns.map((column) => column.name));
+  if (!present.has("showOnHome")) {
     await prisma.$executeRawUnsafe(
       `ALTER TABLE "Category" ADD COLUMN "showOnHome" BOOLEAN NOT NULL DEFAULT true`,
     );
+  }
+  if (!present.has("subcategoriesJson")) {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Category" ADD COLUMN "subcategoriesJson" TEXT`);
   }
 }

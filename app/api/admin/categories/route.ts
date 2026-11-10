@@ -11,6 +11,7 @@ import {
   readJson,
   slugify,
 } from "@/lib/admin-api";
+import { cleanSubmittedTree, saveCategoryTree } from "@/lib/category-taxonomy";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,10 @@ export async function POST(request: Request) {
         showOnHome: asBool(parsed.data.showOnHome) ?? true,
       },
     });
+    const tree = cleanSubmittedTree(parsed.data.subcategories);
+    if (tree?.length) {
+      await saveCategoryTree(category.id, tree);
+    }
     return jsonOk({ category }, 201);
   } catch (error) {
     return prismaError(error);

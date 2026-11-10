@@ -2,16 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/admin-ui";
 import { InventoryForm } from "@/components/admin/inventory-form";
+import { getCategoryOptions } from "@/lib/category-taxonomy";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = { title: "Edit inventory item" };
 export const dynamic = "force-dynamic";
 
-function uniqueNames(values: Array<string | null>) {
-  return [...new Set(values.map((value) => value?.trim() ?? "").filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b),
-  );
-}
 
 export default async function EditInventoryPage({
   params,
@@ -19,7 +15,7 @@ export default async function EditInventoryPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [categories, machine, hints] = await Promise.all([
+  const [categories, machine, options] = await Promise.all([
     prisma.category.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true },
@@ -28,9 +24,7 @@ export default async function EditInventoryPage({
       where: { id },
       include: { images: { orderBy: { sortOrder: "asc" } } },
     }),
-    prisma.machine.findMany({
-      select: { subcategory: true, childCategory: true },
-    }),
+    getCategoryOptions(),
   ]);
 
   if (!machine) {
@@ -49,8 +43,7 @@ export default async function EditInventoryPage({
       />
       <InventoryForm
         categories={categories}
-        subcategories={uniqueNames(hints.map((item) => item.subcategory))}
-        childCategories={uniqueNames(hints.map((item) => item.childCategory))}
+        options={options}
         machine={{
           id: machine.id,
           name: machine.name,

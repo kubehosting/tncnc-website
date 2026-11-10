@@ -25,29 +25,30 @@ enum InvoiceStatus {
 }
 
 model Category {
-  id          String       @id @default(cuid())
-  name        String
-  slug        String       @unique
-  description String?
-  imageUrl    String?
-  kind        CategoryKind @default(MACHINE)
-  sortOrder   Int          @default(0)
-  showOnHome  Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  machines    Machine[]
+  id                String       @id @default(cuid())
+  name              String
+  slug              String       @unique
+  description       String?
+  imageUrl          String?
+  kind              CategoryKind @default(MACHINE)
+  sortOrder         Int          @default(0)
+  showOnHome        Boolean      @default(true)
+  subcategoriesJson String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  machines          Machine[]
 }
 
 model Machine {
-  id           String         @id @default(cuid())
-  slug         String         @unique
-  name         String
-  year         Int?
-  controller   String?
-  condition    String?
-  location     String?
-  brand        String?
-  stock        Int            @default(1)
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  year          Int?
+  controller    String?
+  condition     String?
+  location      String?
+  brand         String?
+  stock         Int            @default(1)
   price         Decimal?
   previousPrice Decimal?
   sku           String?
@@ -56,15 +57,15 @@ model Machine {
   status        MachineStatus  @default(AVAILABLE)
   type          String?
   description   String?
-  featured     Boolean        @default(false)
-  used         Boolean        @default(true)
-  categoryId   String
-  category     Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  images       MachineImage[]
-  invoiceItems InvoiceItem[]
-  deletedAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  featured      Boolean        @default(false)
+  used          Boolean        @default(true)
+  categoryId    String
+  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images        MachineImage[]
+  invoiceItems  InvoiceItem[]
+  deletedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model MachineImage {
@@ -150,13 +151,13 @@ model EnquiryMessage {
 }
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  body        String
-  published   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  body      String
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Coupon {
@@ -170,11 +171,11 @@ model Coupon {
 }
 
 model ServiceRegion {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   name      String
-  country   String   @default("India")
-  active    Boolean  @default(true)
-  sortOrder Int      @default(0)
+  country   String  @default("India")
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
 }
 
 model SiteSetting {

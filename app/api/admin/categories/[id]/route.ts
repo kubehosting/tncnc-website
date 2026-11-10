@@ -10,6 +10,7 @@ import {
   prismaError,
   readJson,
 } from "@/lib/admin-api";
+import { cleanSubmittedTree, saveCategoryTree } from "@/lib/category-taxonomy";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -110,8 +111,17 @@ export async function PATCH(
     data.showOnHome = showOnHome;
   }
 
+  const tree =
+    parsed.data.subcategories !== undefined ? cleanSubmittedTree(parsed.data.subcategories) : undefined;
+  if (parsed.data.subcategories !== undefined && !tree) {
+    return jsonError("subcategories must be a list");
+  }
+
   try {
     const category = await prisma.category.update({ where: { id }, data });
+    if (tree) {
+      await saveCategoryTree(id, tree);
+    }
     return jsonOk({ category });
   } catch (error) {
     return prismaError(error);

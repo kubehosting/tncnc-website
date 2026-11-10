@@ -6,6 +6,7 @@ import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { adminFetch } from "@/lib/admin-fetch";
 
 type Category = { id: string; name: string };
+export type CategoryOptions = Record<string, { name: string; children: string[] }[]>;
 type Machine = {
   id: string;
   name: string;
@@ -34,14 +35,20 @@ const field =
 export function InventoryForm({
   categories,
   machine,
-  subcategories = [],
-  childCategories = [],
+  options = {},
 }: {
   categories: Category[];
   machine?: Machine;
-  subcategories?: string[];
-  childCategories?: string[];
+  options?: CategoryOptions;
 }) {
+  const [categoryId, setCategoryId] = useState(machine?.categoryId ?? "");
+  const [subcategory, setSubcategory] = useState(machine?.subcategory ?? "");
+  const [childCategory, setChildCategory] = useState(machine?.childCategory ?? "");
+  const subcategoryOptions = options[categoryId] ?? [];
+  const selectedSub = subcategoryOptions.find(
+    (node) => node.name.toLowerCase() === subcategory.trim().toLowerCase(),
+  );
+  const childOptions = selectedSub?.children ?? [];
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -121,7 +128,8 @@ export function InventoryForm({
           <select
             name="categoryId"
             required
-            defaultValue={machine?.categoryId ?? ""}
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
             className={`${field} mt-1`}
           >
             <option value="" disabled>
@@ -183,27 +191,34 @@ export function InventoryForm({
           <input
             name="subcategory"
             list="subcategory-options"
-            defaultValue={machine?.subcategory ?? ""}
+            value={subcategory}
+            onChange={(event) => setSubcategory(event.target.value)}
             className={`${field} mt-1`}
-            placeholder="Cnc Lathe"
+            placeholder={categoryId ? "Pick from the list or type a new one" : "Choose a category first"}
           />
           <datalist id="subcategory-options">
-            {subcategories.map((name) => (
-              <option key={name} value={name} />
+            {subcategoryOptions.map((node) => (
+              <option key={node.name} value={node.name} />
             ))}
           </datalist>
+          {categoryId && subcategoryOptions.length === 0 ? (
+            <span className="mt-1 block text-xs font-normal text-slate-500">
+              This category has no saved subcategories yet. Add them in Manage Categories.
+            </span>
+          ) : null}
         </label>
         <label className="block text-sm font-medium text-slate-700">
           Child category
           <input
             name="childCategory"
             list="child-category-options"
-            defaultValue={machine?.childCategory ?? ""}
+            value={childCategory}
+            onChange={(event) => setChildCategory(event.target.value)}
             className={`${field} mt-1`}
-            placeholder="Servo Motor"
+            placeholder={subcategory ? "Pick from the list or type a new one" : "Choose a subcategory first"}
           />
           <datalist id="child-category-options">
-            {childCategories.map((name) => (
+            {childOptions.map((name) => (
               <option key={name} value={name} />
             ))}
           </datalist>
