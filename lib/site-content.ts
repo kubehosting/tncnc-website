@@ -496,6 +496,73 @@ export async function getPublicMachine(slug: string) {
   }
 }
 
+export type CategoryMenuGroup = {
+  slug: string;
+  name: string;
+  kind: CategoryKind;
+  href: string;
+  count: number;
+  subcategories: { name: string; href: string; count: number }[];
+};
+
+const MENU_SUBCATEGORY_LIMIT = 6;
+
+export async function getCategoryMenu(): Promise<CategoryMenuGroup[]> {
+  try {
+    const [categories, rows] = await Promise.all([
+      prisma.category.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+      prisma.machine.groupBy({
+        by: ["categoryId", "subcategory"],
+        where: { status: "AVAILABLE", deletedAt: null },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const totals = new Map<string, number>();
+    const subcategoryCounts = new Map<string, Map<string, { name: string; count: number }>>();
+    for (const row of rows) {
+      const count = row._count._all;
+      totals.set(row.categoryId, (totals.get(row.categoryId) ?? 0) + count);
+      const name = row.subcategory?.trim();
+      if (!name) {
+        continue;
+      }
+      const bucket = subcategoryCounts.get(row.categoryId) ?? new Map();
+      const key = name.toLowerCase();
+      const current = bucket.get(key);
+      bucket.set(key, { name: current?.name ?? name, count: (current?.count ?? 0) + count });
+      subcategoryCounts.set(row.categoryId, bucket);
+    }
+
+    const groups = categories.map((category) => {
+      const href = categoryHref(category.slug, category.kind);
+      const base = category.kind === "SPARE" ? "/spare-parts" : "/machines";
+      const subcategories = [...(subcategoryCounts.get(category.id)?.values() ?? [])]
+        .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name))
+        .slice(0, MENU_SUBCATEGORY_LIMIT)
+        .map((sub) => ({
+          name: sub.name,
+          count: sub.count,
+          href: `${base}?${new URLSearchParams({ type: category.slug, sub: sub.name })}`,
+        }));
+      return {
+        slug: category.slug,
+        name: category.name,
+        kind: category.kind,
+        href,
+        count: totals.get(category.id) ?? 0,
+        subcategories,
+      };
+    });
+
+    const stocked = groups.filter((group) => group.count > 0);
+    return stocked.length ? stocked : groups;
+  } catch (error) {
+    console.error("Could not build the category menu.", error);
+    return [];
+  }
+}
+
 export async function listPublicCategories(kind?: CategoryKind) {
   try {
     const categories = await prisma.category.findMany({
