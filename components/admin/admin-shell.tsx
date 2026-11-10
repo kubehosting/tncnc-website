@@ -10,6 +10,9 @@ function isActive(pathname: string, href: string) {
   if (href === "/admin") {
     return pathname === "/admin";
   }
+  if (href === "/admin/categories") {
+    return pathname === href;
+  }
   if (href === "/admin/inventory") {
     return pathname === href || /^\/admin\/inventory\/(?!bulk|recycle)/.test(pathname);
   }

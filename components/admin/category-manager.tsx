@@ -1,13 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
-import {
-  SubcategoryEditor,
-  fromEditorTree,
-  toEditorTree,
-  type EditorNode,
-} from "@/components/admin/subcategory-editor";
 import { adminFetch } from "@/lib/admin-fetch";
 import { mediaUrl } from "@/lib/media-url";
 
@@ -37,7 +32,6 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
   const [sortOrder, setSortOrder] = useState("0");
   const [imageUrl, setImageUrl] = useState("");
   const [showOnHome, setShowOnHome] = useState(true);
-  const [tree, setTree] = useState<EditorNode[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -50,7 +44,6 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
     setSortOrder(String(category.sortOrder));
     setImageUrl(category.imageUrl ?? "");
     setShowOnHome(category.showOnHome);
-    setTree(toEditorTree(category.subcategories));
     setError("");
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -63,7 +56,6 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
     setSortOrder("0");
     setImageUrl("");
     setShowOnHome(true);
-    setTree([]);
     setError("");
   }
 
@@ -83,10 +75,6 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (tree.some((node) => !node.name.trim() || node.children.some((child) => !child.name.trim()))) {
-      setError("Fill in or remove the empty subcategory / child category names before saving.");
-      return;
-    }
     setPending(true);
     setError("");
     const payload = {
@@ -96,7 +84,6 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
       sortOrder: Number(sortOrder) || 0,
       imageUrl: imageUrl.trim() || null,
       showOnHome,
-      subcategories: fromEditorTree(tree),
     };
     try {
       if (editingId) {
@@ -225,7 +212,23 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
             placeholder="Optional notes for this machine type"
           />
         </label>
-        <SubcategoryEditor tree={tree} onChange={setTree} />
+        {editingId ? (
+          <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs">
+            <span className="w-full text-slate-500">Manage the levels under this category:</span>
+            <Link
+              href={`/admin/categories/sub?category=${editingId}`}
+              className="font-semibold text-sky-700 hover:underline"
+            >
+              Sub categories →
+            </Link>
+            <Link
+              href={`/admin/categories/child?category=${editingId}`}
+              className="font-semibold text-sky-700 hover:underline"
+            >
+              Child categories →
+            </Link>
+          </div>
+        ) : null}
         <div>
           <p className="mb-1.5 text-sm font-medium text-slate-700">Category image</p>
           {imageUrl ? (
@@ -322,13 +325,21 @@ export function CategoryManager({ initial }: { initial: Category[] }) {
                     <div>
                       <p className="font-medium text-navy">{category.name}</p>
                       <p className="text-xs text-slate-500">{category.slug}</p>
-                      {category.subcategories.length ? (
-                        <p className="mt-0.5 text-[11px] text-slate-500">
-                          {category.subcategories.length} subcategor
-                          {category.subcategories.length === 1 ? "y" : "ies"} ·{" "}
+                      <p className="mt-0.5 text-[11px]">
+                        <Link
+                          href={`/admin/categories/sub?category=${category.id}`}
+                          className="text-sky-700 hover:underline"
+                        >
+                          {category.subcategories.length} sub
+                        </Link>
+                        <span className="text-slate-400"> · </span>
+                        <Link
+                          href={`/admin/categories/child?category=${category.id}`}
+                          className="text-sky-700 hover:underline"
+                        >
                           {category.subcategories.reduce((sum, node) => sum + node.children.length, 0)} child
-                        </p>
-                      ) : null}
+                        </Link>
+                      </p>
                     </div>
                   </div>
                 </td>

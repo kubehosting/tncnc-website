@@ -240,3 +240,95 @@ export async function getCategoryOptions() {
     ]),
   );
 }
+
+export type TaxonomyAction =
+  | { action: "addSub"; categoryId: string; name: string }
+  | { action: "renameSub"; categoryId: string; sub: string; name: string }
+  | { action: "removeSub"; categoryId: string; sub: string }
+  | { action: "addChild"; categoryId: string; sub: string; name: string }
+  | { action: "renameChild"; categoryId: string; sub: string; child: string; name: string }
+  | { action: "removeChild"; categoryId: string; sub: string; child: string };
+
+export class TaxonomyError extends Error {}
+
+export async function applyTaxonomyAction(input: TaxonomyAction) {
+  const current = (await getCategoryTrees([input.categoryId])).get(input.categoryId);
+  if (!current) {
+    throw new TaxonomyError("Category not found");
+  }
+  const tree: SubmittedNode[] = current.map((node) => ({
+    name: node.name,
+    original: node.name,
+    children: node.children.map((child) => ({ name: child.name, original: child.name })),
+  }));
+  const findSub = (name: string) => {
+    const node = tree.find((entry) => key(entry.name) === key(name));
+    if (!node) {
+      throw new TaxonomyError(`Subcategory “${name}” was not found. Reload and try again.`);
+    }
+    return node;
+  };
+  const findChild = (node: SubmittedNode, name: string) => {
+    const child = node.children.find((entry) => key(entry.name) === key(name));
+    if (!child) {
+      throw new TaxonomyError(`Child category “${name}” was not found. Reload and try again.`);
+    }
+    return child;
+  };
+  const requireName = (value: string) => {
+    const name = value.trim();
+    if (!name) {
+      throw new TaxonomyError("Name is required");
+    }
+    return name;
+  };
+
+  switch (input.action) {
+    case "addSub": {
+      const name = requireName(input.name);
+      if (tree.some((entry) => key(entry.name) === key(name))) {
+        throw new TaxonomyError(`“${name}” already exists in this category.`);
+      }
+      tree.push({ name, original: null, children: [] });
+      break;
+    }
+    case "renameSub":
+      findSub(input.sub).name = requireName(input.name);
+      break;
+    case "removeSub": {
+      const node = findSub(input.sub);
+      tree.splice(tree.indexOf(node), 1);
+      break;
+    }
+    case "addChild": {
+      const node = findSub(input.sub);
+      const name = requireName(input.name);
+      if (node.children.some((entry) => key(entry.name) === key(name))) {
+        throw new TaxonomyError(`“${name}” already exists under ${node.name}.`);
+      }
+      node.children.push({ name, original: null });
+      break;
+    }
+    case "renameChild":
+      findChild(findSub(input.sub), input.child).name = requireName(input.name);
+      break;
+    case "removeChild": {
+      const node = findSub(input.sub);
+      node.children.splice(node.children.indexOf(findChild(node, input.child)), 1);
+      break;
+    }
+  }
+
+  await saveCategoryTree(input.categoryId, cleanSubmittedTree(tree) ?? []);
+}
+
+export async function getTaxonomyPageData() {
+  const [categories, trees] = await Promise.all([
+    prisma.category.findMany({
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, kind: true },
+    }),
+    getCategoryTrees(),
+  ]);
+  return { categories, trees: Object.fromEntries(trees) };
+}

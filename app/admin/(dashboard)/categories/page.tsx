@@ -5,7 +5,7 @@ import { getCategoryTrees } from "@/lib/category-taxonomy";
 import { ensureDatabase } from "@/lib/ensure-db";
 import { prisma } from "@/lib/prisma";
 
-export const metadata: Metadata = { title: "Manage Categories" };
+export const metadata: Metadata = { title: "Main Category" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminCategoriesPage() {
@@ -23,8 +23,8 @@ export default async function AdminCategoriesPage() {
   return (
     <>
       <AdminPageHeader
-        title="Manage Categories"
-        description="Add photos, subcategories, and child categories, and choose which categories appear on the homepage."
+        title="Main Category"
+        description="Add photos and choose which categories appear on the homepage. Sub and child categories have their own pages."
       />
       <CategoryManager
         initial={categories.map((category) => ({

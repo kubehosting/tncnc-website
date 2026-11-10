@@ -5,7 +5,14 @@ export const adminNav = [
   { href: "/admin/invoices", label: "Orders" },
   { href: "/admin/regions", label: "Manage Country" },
   { href: "/admin/earnings", label: "Total Earning" },
-  { href: "/admin/categories", label: "Manage Categories" },
+  {
+    label: "Manage Categories",
+    children: [
+      { href: "/admin/categories", label: "Main Category" },
+      { href: "/admin/categories/sub", label: "Sub Category" },
+      { href: "/admin/categories/child", label: "Child Category" },
+    ],
+  },
   {
     label: "Product",
     children: [
