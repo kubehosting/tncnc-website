@@ -11,8 +11,10 @@ export async function GET(request: Request) {
     return denied;
   }
 
+  const categoryId = new URL(request.url).searchParams.get("category")?.trim() || undefined;
+
   try {
-    const file = await buildInventoryExcel();
+    const file = await buildInventoryExcel(categoryId ? { categoryId } : undefined);
     return new Response(new Uint8Array(file.body), {
       headers: {
         "Content-Type": "application/vnd.ms-excel; charset=utf-8",

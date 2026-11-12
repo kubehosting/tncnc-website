@@ -1,3 +1,4 @@
+import { slugify } from "@/lib/admin-api";
 import { ensureDatabase } from "@/lib/ensure-db";
 import { prisma } from "@/lib/prisma";
 
@@ -187,7 +188,12 @@ async function loadWithRawSql(): Promise<[ExportMachine[], ExportCategory[]]> {
   return [machines, categories];
 }
 
-export async function buildInventoryExcel() {
+function sheetName(value: string) {
+  const cleaned = value.replace(/[:\\/?*[\]]/g, " ").replace(/\s+/g, " ").trim();
+  return (cleaned || "Inventory").slice(0, 31);
+}
+
+export async function buildInventoryExcel(options?: { categoryId?: string }) {
   try {
     await ensureDatabase();
   } catch (error) {
@@ -203,7 +209,13 @@ export async function buildInventoryExcel() {
     [machines, categories] = await loadWithRawSql();
   }
   const categoryById = new Map(categories.map((category) => [category.id, category]));
-  const sorted = [...machines].sort((left, right) => {
+  const requestedId = options?.categoryId?.trim();
+  const requested = requestedId ? categoryById.get(requestedId) : undefined;
+  if (requestedId && !requested) {
+    throw new Error("That category was not found.");
+  }
+  const included = requested ? machines.filter((machine) => machine.categoryId === requested.id) : machines;
+  const sorted = [...included].sort((left, right) => {
     const leftCategory = categoryById.get(left.categoryId);
     const rightCategory = categoryById.get(right.categoryId);
     const categoryOrder = (leftCategory?.sortOrder ?? 9999) - (rightCategory?.sortOrder ?? 9999);
@@ -264,7 +276,7 @@ export async function buildInventoryExcel() {
    <Interior ss:Color="#0B1C36" ss:Pattern="Solid"/>
   </Style>
  </Styles>
- <Worksheet ss:Name="Inventory">
+ <Worksheet ss:Name="${xmlText(sheetName(requested?.name ?? "Inventory"))}">
   <Table>
    <Row ss:StyleID="header">${headerRow}</Row>
    ${rows.map((row) => `<Row>${row}</Row>`).join("\n   ")}
@@ -273,7 +285,9 @@ export async function buildInventoryExcel() {
 </Workbook>`;
 
   return {
-    filename: `TNCNC-inventory-${stamp}.xls`,
+    filename: requested
+      ? `TNCNC-${slugify(requested.name) || "category"}-${stamp}.xls`
+      : `TNCNC-inventory-${stamp}.xls`,
     body: Buffer.from(xml, "utf8"),
   };
 }

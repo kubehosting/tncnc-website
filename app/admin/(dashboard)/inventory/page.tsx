@@ -40,12 +40,6 @@ export default async function AdminInventoryPage() {
         description="All products in boxes, grouped by category, with the total on each box."
         action={
           <div className="flex flex-wrap gap-2">
-            <a
-              href="/api/admin/machines/export"
-              className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-navy hover:border-gold"
-            >
-              Export to Excel
-            </a>
             <Link
               href="/admin/inventory/recycle"
               className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-navy hover:border-gold"

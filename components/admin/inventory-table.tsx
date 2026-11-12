@@ -104,15 +104,29 @@ export function InventoryBoard({ rows, categories }: { rows: Row[]; categories: 
         ))}
       </div>
 
-      <label className="block">
-        <span className="sr-only">Find a product</span>
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Find a product by name or brand"
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-gold"
-        />
-      </label>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label className="block flex-1">
+          <span className="sr-only">Find a product</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Find a product by name or brand"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-gold"
+          />
+        </label>
+        <a
+          href={
+            selected === "all"
+              ? "/api/admin/machines/export"
+              : `/api/admin/machines/export?category=${encodeURIComponent(selected)}`
+          }
+          className="inline-flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-navy hover:border-gold"
+        >
+          {selected === "all"
+            ? "Export all to Excel"
+            : `Export ${groups.find((group) => group.id === selected)?.name ?? "category"} to Excel`}
+        </a>
+      </div>
 
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
@@ -129,9 +143,17 @@ export function InventoryBoard({ rows, categories }: { rows: Row[]; categories: 
           <section key={group.id}>
             <div className="mb-3 flex items-end justify-between gap-3">
               <h2 className="text-lg font-bold text-navy">{group.name}</h2>
-              <p className="text-sm font-semibold text-slate-600">
-                {group.products.length} {group.products.length === 1 ? "product" : "products"}
-              </p>
+              <div className="flex items-center gap-3">
+                <a
+                  href={`/api/admin/machines/export?category=${encodeURIComponent(group.id)}`}
+                  className="text-sm font-semibold text-navy hover:underline"
+                >
+                  Export
+                </a>
+                <p className="text-sm font-semibold text-slate-600">
+                  {group.products.length} {group.products.length === 1 ? "product" : "products"}
+                </p>
+              </div>
             </div>
             {group.products.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-sm text-slate-500">
