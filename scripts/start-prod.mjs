@@ -9,7 +9,7 @@ if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = "file:../data/prod.db";
 }
 
-// aaPanel file copies often drop the execute bit on node_modules/.bin and Prisma engines.
+// aaPanel file copies often drop the execute bit on node_modules/.bin.
 const binDir = path.join(root, "node_modules", ".bin");
 if (existsSync(binDir)) {
   for (const name of readdirSync(binDir)) {
@@ -20,37 +20,6 @@ if (existsSync(binDir)) {
     }
   }
 }
-
-function chmodPrismaEngines(dir) {
-  if (!existsSync(dir)) {
-    return;
-  }
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      chmodPrismaEngines(full);
-      continue;
-    }
-    if (!/engine/i.test(entry.name)) {
-      continue;
-    }
-    try {
-      chmodSync(full, 0o755);
-    } catch {
-      // schema-engine may still fail with EACCES; db push is non-fatal below.
-    }
-  }
-}
-
-chmodPrismaEngines(path.join(root, "node_modules", "@prisma"));
-chmodPrismaEngines(path.join(root, "node_modules", "prisma"));
-chmodPrismaEngines(path.join(root, "node_modules", ".prisma"));
 
 function runNode(script, args) {
   const result = spawnSync(process.execPath, [path.join(root, script), ...args], {
@@ -76,7 +45,7 @@ const pushStatus = runNode("node_modules/prisma/build/index.js", [
   "--skip-generate",
 ]);
 if (pushStatus) {
-  console.error("prisma db push failed; continuing to start the site.");
+  process.exit(pushStatus);
 }
 
 const seedStatus = runNode("node_modules/prisma/build/index.js", ["db", "seed"]);
