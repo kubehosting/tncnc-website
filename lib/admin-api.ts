@@ -89,6 +89,11 @@ export function slugify(input: string) {
 export function prismaError(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
+      const target = error.meta?.target;
+      const fields = Array.isArray(target) ? target.join(" ") : String(target ?? "");
+      if (/sku/i.test(fields)) {
+        return jsonError("SKU is already used. Enter a different SKU.", 409);
+      }
       return jsonError("A record with that unique value already exists", 409);
     }
     if (error.code === "P2025") {

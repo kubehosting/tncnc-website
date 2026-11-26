@@ -6,12 +6,10 @@ import {
   asOptionalString,
   asString,
   jsonError,
-  jsonOk,
-  prismaError,
-  readJson,
   slugify,
 } from "@/lib/admin-api";
 import { prisma } from "@/lib/prisma";
+import { duplicateSkuMessage, readRequestSku, skuKey } from "@/lib/sku";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +68,32 @@ export async function replaceImages(
   ]);
 }
 
+export async function findMachineIdBySku(sku: string) {
+  const key = skuKey(sku);
+  if (!key) {
+    return null;
+  }
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>(
+    Prisma.sql`SELECT "id" FROM "Machine" WHERE lower(trim("sku")) = ${key} AND "sku" IS NOT NULL AND trim("sku") != '' LIMIT 1`,
+  );
+  return rows[0]?.id ?? null;
+}
+
+export async function duplicateSkuResponse(skuValue: unknown, excludeId?: string) {
+  const sku = readRequestSku(skuValue);
+  if (sku === undefined) {
+    return null;
+  }
+  if (!sku) {
+    return jsonError("SKU is required");
+  }
+  const existingId = await findMachineIdBySku(sku);
+  if (existingId && existingId !== excludeId) {
+    return jsonError(duplicateSkuMessage(sku), 409);
+  }
+  return null;
+}
+
 export function machineCreateInput(body: Record<string, unknown>) {
   const name = asString(body.name);
   const categoryId = asString(body.categoryId);
@@ -100,6 +124,10 @@ export function machineCreateInput(body: Record<string, unknown>) {
   if (stock === undefined || stock < 0) {
     return { error: jsonError("stock must be 0 or greater") };
   }
+  const sku = readRequestSku(body.sku);
+  if (!sku) {
+    return { error: jsonError("SKU is required") };
+  }
 
   return {
     data: {
@@ -114,7 +142,7 @@ export function machineCreateInput(body: Record<string, unknown>) {
       location: asOptionalString(body.location) ?? null,
       price,
       previousPrice,
-      sku: asOptionalString(body.sku) ?? null,
+      sku,
       subcategory: asOptionalString(body.subcategory) ?? null,
       childCategory: asOptionalString(body.childCategory) ?? null,
       status: asMachineStatus(body.status) ?? MachineStatus.AVAILABLE,
@@ -186,7 +214,11 @@ export function machineUpdateInput(body: Record<string, unknown>) {
     data.previousPrice = previousPrice ?? null;
   }
   if (body.sku !== undefined) {
-    data.sku = asOptionalString(body.sku);
+    const sku = readRequestSku(body.sku);
+    if (!sku) {
+      return { error: jsonError("SKU is required") };
+    }
+    data.sku = sku;
   }
   if (body.subcategory !== undefined) {
     data.subcategory = asOptionalString(body.subcategory);

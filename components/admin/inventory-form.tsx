@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { adminFetch } from "@/lib/admin-fetch";
+import { duplicateSkuMessage } from "@/lib/sku";
 
 type Category = { id: string; name: string };
 export type CategoryOptions = Record<string, { name: string; children: string[] }[]>;
@@ -51,15 +52,51 @@ export function InventoryForm({
   const childOptions = selectedSub?.children ?? [];
   const router = useRouter();
   const [error, setError] = useState("");
+  const [sku, setSku] = useState(machine?.sku ?? "");
+  const [skuError, setSkuError] = useState("");
   const [pending, setPending] = useState(false);
   const [existing, setExisting] = useState(machine?.images.map((image) => image.url) ?? []);
   const [files, setFiles] = useState<File[]>([]);
+
+  function isOwnSku(value: string) {
+    return Boolean(machine?.sku && value.trim().toLowerCase() === machine.sku.trim().toLowerCase());
+  }
+
+  async function checkSkuAvailable(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed || isOwnSku(trimmed)) {
+      setSkuError("");
+      return true;
+    }
+    try {
+      const result = (await adminFetch(`/api/admin/machines?sku=${encodeURIComponent(trimmed)}`)) as {
+        machines?: { id: string }[];
+      };
+      const taken = (result.machines ?? []).some((row) => row.id !== machine?.id);
+      if (taken) {
+        setSkuError(duplicateSkuMessage(trimmed));
+        return false;
+      }
+      setSkuError("");
+      return true;
+    } catch {
+      setSkuError("");
+      return true;
+    }
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
     setError("");
     const form = new FormData(event.currentTarget);
+    const skuValue = String(form.get("sku") ?? sku);
+    const skuAvailable = await checkSkuAvailable(skuValue);
+    if (!skuAvailable) {
+      setError(duplicateSkuMessage(skuValue.trim()));
+      setPending(false);
+      return;
+    }
 
     try {
       let uploaded: string[] = [];
@@ -84,7 +121,7 @@ export function InventoryForm({
         stock: Number(form.get("stock") ?? 1),
         price: form.get("price") ? Number(form.get("price")) : null,
         previousPrice: form.get("previousPrice") ? Number(form.get("previousPrice")) : null,
-        sku: String(form.get("sku") ?? ""),
+        sku: skuValue,
         subcategory: String(form.get("subcategory") ?? ""),
         childCategory: String(form.get("childCategory") ?? ""),
         status: String(form.get("status") ?? "AVAILABLE"),
@@ -184,7 +221,23 @@ export function InventoryForm({
         </label>
         <label className="block text-sm font-medium text-slate-700">
           SKU
-          <input name="sku" defaultValue={machine?.sku ?? ""} className={`${field} mt-1`} placeholder="10000001" />
+          <input
+            name="sku"
+            required
+            value={sku}
+            onChange={(event) => {
+              setSku(event.target.value);
+              if (skuError) {
+                setSkuError("");
+              }
+            }}
+            onBlur={() => {
+              void checkSkuAvailable(sku);
+            }}
+            className={`${field} mt-1`}
+            placeholder="10000001"
+          />
+          {skuError ? <span className="mt-1 block text-xs font-normal text-rose-600">{skuError}</span> : null}
         </label>
         <label className="block text-sm font-medium text-slate-700">
           Subcategory

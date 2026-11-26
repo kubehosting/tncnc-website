@@ -138,6 +138,7 @@ export const sqliteSchemaStatements = [
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Category_slug_key" ON "Category"("slug")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Machine_slug_key" ON "Machine"("slug")`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Machine_sku_lower_trim_key" ON "Machine"(lower(trim("sku"))) WHERE "sku" IS NOT NULL AND trim("sku") != ''`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "AdminUser_email_key" ON "AdminUser"("email")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_invoiceNumber_key" ON "Invoice"("invoiceNumber")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "BlogPost_slug_key" ON "BlogPost"("slug")`,

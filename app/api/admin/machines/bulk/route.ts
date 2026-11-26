@@ -1,8 +1,9 @@
 import { asInt, jsonError, jsonOk, readJson, slugify } from "@/lib/admin-api";
 import { requireAdmin } from "@/lib/admin-auth";
 import { parseInventoryUpload, normalizeImportRow } from "@/lib/inventory-import";
-import { machineCreateInput, machineUpdateInput, replaceImages } from "@/lib/machines-admin";
+import { findMachineIdBySku, machineCreateInput, machineUpdateInput, replaceImages } from "@/lib/machines-admin";
 import { prisma } from "@/lib/prisma";
+import { duplicateSkuMessage, readRequestSku, skuKey } from "@/lib/sku";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
   const created: string[] = [];
   const updated: string[] = [];
   const errors: string[] = [];
+  const fileSkuOwners = new Map<string, string>();
 
   const catalog = await categoryCatalog();
 
@@ -110,6 +112,11 @@ export async function POST(request: Request) {
 
     const name = row.name?.trim();
     const slug = row.slug?.trim() || (name ? `${slugify(name)}-${index + 1}` : "");
+    const sku = readRequestSku(row.sku);
+    if (!sku) {
+      errors.push(`Row ${index + 1}: SKU is required`);
+      continue;
+    }
     const imageUrls = row.imageUrls
       ? row.imageUrls.split(/[;|]/).map((url) => url.trim()).filter(Boolean)
       : [];
@@ -127,7 +134,7 @@ export async function POST(request: Request) {
       status: row.status || "AVAILABLE",
       price: row.price || undefined,
       previousPrice: row.previousPrice || null,
-      sku: row.sku || undefined,
+      sku,
       subcategory: row.subcategory || undefined,
       childCategory: row.childCategory || undefined,
       used: truthy(row.used, true),
@@ -138,6 +145,18 @@ export async function POST(request: Request) {
     const existing = slug
       ? await prisma.machine.findUnique({ where: { slug } })
       : null;
+    const key = skuKey(sku);
+    const fileOwnerSlug = fileSkuOwners.get(key);
+    if (fileOwnerSlug && fileOwnerSlug !== slug) {
+      errors.push(`Row ${index + 1}: ${duplicateSkuMessage(sku)}`);
+      continue;
+    }
+    const skuOwnerId = await findMachineIdBySku(sku);
+    if (skuOwnerId && skuOwnerId !== existing?.id) {
+      errors.push(`Row ${index + 1}: ${duplicateSkuMessage(sku)}`);
+      continue;
+    }
+    fileSkuOwners.set(key, slug);
 
     try {
       if (existing) {

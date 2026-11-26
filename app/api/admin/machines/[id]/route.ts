@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/admin-auth";
 import { jsonError, jsonOk, prismaError, readJson } from "@/lib/admin-api";
 import {
+  duplicateSkuResponse,
   machineInclude,
   machineUpdateInput,
   replaceImages,
@@ -51,6 +52,11 @@ export async function PATCH(
   const prepared = machineUpdateInput(parsed.data);
   if ("error" in prepared) {
     return prepared.error;
+  }
+
+  const skuConflict = await duplicateSkuResponse(parsed.data.sku, id);
+  if (skuConflict) {
+    return skuConflict;
   }
 
   try {

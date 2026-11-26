@@ -1,8 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/admin-auth";
-import { asString, jsonError, jsonOk, prismaError, readJson } from "@/lib/admin-api";
+import { asString, jsonOk, prismaError, readJson } from "@/lib/admin-api";
 import {
   asMachineStatus,
+  duplicateSkuResponse,
+  findMachineIdBySku,
   machineCreateInput,
   machineInclude,
   replaceImages,
@@ -21,8 +23,9 @@ export async function GET(request: Request) {
   const status = asMachineStatus(searchParams.get("status") ?? undefined);
   const categoryId = searchParams.get("categoryId") ?? undefined;
   const q = searchParams.get("q")?.trim();
+  const sku = searchParams.get("sku")?.trim();
 
-  const where: Prisma.MachineWhereInput = { deletedAt: null };
+  const where: Prisma.MachineWhereInput = sku ? {} : { deletedAt: null };
   if (status) {
     where.status = status;
   }
@@ -35,6 +38,13 @@ export async function GET(request: Request) {
       { location: { contains: q } },
       { controller: { contains: q } },
     ];
+  }
+  if (sku) {
+    const matchId = await findMachineIdBySku(sku);
+    if (!matchId) {
+      return jsonOk({ machines: [] });
+    }
+    where.id = matchId;
   }
 
   try {
@@ -63,6 +73,11 @@ export async function POST(request: Request) {
   const prepared = machineCreateInput(parsed.data);
   if ("error" in prepared) {
     return prepared.error;
+  }
+
+  const skuConflict = await duplicateSkuResponse(parsed.data.sku);
+  if (skuConflict) {
+    return skuConflict;
   }
 
   try {
